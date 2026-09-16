@@ -3,6 +3,36 @@
 // touching any UI component.
 
 const QUIZZES_KEY = 'quizQuizzes'
+const TYPES_KEY = 'quizTypes'
+
+export function seedQuizTypes() {
+  return [
+    { id: 'multiple-choice', name: 'Multiple Choice' },
+    { id: 'true-false', name: 'True / False' },
+    { id: 'timed', name: 'Timed Challenge' },
+  ]
+}
+
+export function loadQuizTypes() {
+  try {
+    const raw = localStorage.getItem(TYPES_KEY)
+    if (raw) {
+      const parsed = JSON.parse(raw)
+      if (Array.isArray(parsed)) return parsed
+    }
+  } catch {
+    /* fall through to seeds */
+  }
+  return seedQuizTypes()
+}
+
+export function saveQuizTypes(quizTypes) {
+  try {
+    localStorage.setItem(TYPES_KEY, JSON.stringify(quizTypes))
+  } catch {
+    /* storage unavailable — UI state still works in memory */
+  }
+}
 
 export function seedQuizzes() {
   const withIds = (questions) =>

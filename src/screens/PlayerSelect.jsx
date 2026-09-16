@@ -1,15 +1,9 @@
 import { useNavigate } from 'react-router-dom'
 import { useQuiz } from '../context/QuizContext'
 
-const typeLabels = {
-  'multiple-choice': 'Multiple Choice',
-  'true-false': 'True / False',
-  timed: 'Timed Challenge',
-}
-
 export default function PlayerSelect() {
   const navigate = useNavigate()
-  const { quizzes, playerName } = useQuiz()
+  const { quizzes, playerName, getTypeName } = useQuiz()
 
   return (
     <main className="main player-select-main">
@@ -33,7 +27,7 @@ export default function PlayerSelect() {
           >
             <div className="quiz-card-top">
               <span className="quiz-badge quiz-badge-type">
-                {typeLabels[quiz.type] ?? quiz.type}
+                {getTypeName(quiz.type)}
               </span>
               <span className="quiz-badge quiz-badge-count">
                 {quiz.questions.length} Qs

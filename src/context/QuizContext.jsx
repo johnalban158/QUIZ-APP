@@ -1,12 +1,14 @@
 import { createContext, useContext, useEffect, useState } from 'react'
-import { loadQuizzes, saveQuizzes } from '../data'
+import { loadQuizzes, loadQuizTypes, saveQuizzes, saveQuizTypes } from '../data'
 
 const QuizContext = createContext(null)
 
 const initialQuizzes = loadQuizzes()
+const initialQuizTypes = loadQuizTypes()
 
 export function QuizProvider({ children }) {
   const [quizzes, setQuizzes] = useState(() => initialQuizzes)
+  const [quizTypes, setQuizTypes] = useState(() => initialQuizTypes)
   const [activeQuizId, setActiveQuizId] = useState(
     () => initialQuizzes[0]?.id ?? null,
   )
@@ -16,6 +18,10 @@ export function QuizProvider({ children }) {
   useEffect(() => {
     saveQuizzes(quizzes)
   }, [quizzes])
+
+  useEffect(() => {
+    saveQuizTypes(quizTypes)
+  }, [quizTypes])
 
   const activeQuiz = quizzes.find((quiz) => quiz.id === activeQuizId) ?? null
 
@@ -131,10 +137,34 @@ export function QuizProvider({ children }) {
 
   const startResult = (summary) => setResult(summary)
 
+  const addQuizType = () => {
+    const type = { id: crypto.randomUUID(), name: 'New Type' }
+    setQuizTypes((prev) => [...prev, type])
+    return type.id
+  }
+
+  const updateQuizType = (id, patch) =>
+    setQuizTypes((prev) =>
+      prev.map((type) => (type.id === id ? { ...type, ...patch } : type)),
+    )
+
+  const removeQuizType = (id) => {
+    setQuizTypes((prev) => prev.filter((type) => type.id !== id))
+    setQuizzes((prev) =>
+      prev.map((quiz) =>
+        quiz.type === id ? { ...quiz, type: 'multiple-choice' } : quiz,
+      ),
+    )
+  }
+
+  const getTypeName = (typeId) =>
+    quizTypes.find((type) => type.id === typeId)?.name ?? 'Quiz'
+
   const value = {
     quizzes,
     activeQuiz,
     activeQuizId,
+    quizTypes,
     playerName,
     result,
     setPlayerName,
@@ -149,6 +179,10 @@ export function QuizProvider({ children }) {
     updateQuestionInActive,
     removeQuestionFromActive,
     startResult,
+    addQuizType,
+    updateQuizType,
+    removeQuizType,
+    getTypeName,
   }
 
   return <QuizContext.Provider value={value}>{children}</QuizContext.Provider>

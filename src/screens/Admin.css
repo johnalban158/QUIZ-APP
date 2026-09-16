@@ -157,6 +157,20 @@
   font-weight: 600;
 }
 
+.type-card-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.type-dot {
+  width: 0.6rem;
+  height: 0.6rem;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--accent), var(--correct));
+  flex-shrink: 0;
+}
+
 .admin-sub {
   color: var(--muted);
   margin: 0 0 0.75rem;

@@ -4,12 +4,14 @@ import { useQuiz } from '../context/QuizContext'
 import ModulesTab from '../components/admin/ModulesTab'
 import QuestionsTab from '../components/admin/QuestionsTab'
 import SettingsTab from '../components/admin/SettingsTab'
+import QuizTypesTab from '../components/admin/QuizTypesTab'
 import './Admin.css'
 
 const tabs = [
   { id: 'modules', label: 'Modules' },
   { id: 'questions', label: 'Questions' },
   { id: 'settings', label: 'Quiz Settings' },
+  { id: 'types', label: 'Quiz Types' },
 ]
 
 export default function Admin() {
@@ -104,6 +106,7 @@ export default function Admin() {
             {active === 'modules' && <ModulesTab />}
             {active === 'questions' && <QuestionsTab />}
             {active === 'settings' && <SettingsTab />}
+            {active === 'types' && <QuizTypesTab />}
           </>
         )}
       </section>

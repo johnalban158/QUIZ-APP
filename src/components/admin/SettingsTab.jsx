@@ -1,7 +1,7 @@
 import { useQuiz } from '../../context/QuizContext'
 
 export default function SettingsTab() {
-  const { activeQuiz, updateActiveQuiz, updateActiveSettings } = useQuiz()
+  const { activeQuiz, quizTypes, updateActiveQuiz, updateActiveSettings } = useQuiz()
 
   if (!activeQuiz) return null
 
@@ -18,9 +18,11 @@ export default function SettingsTab() {
           value={activeQuiz.type}
           onChange={(e) => updateActiveQuiz({ type: e.target.value })}
         >
-          <option value="multiple-choice">Multiple Choice</option>
-          <option value="true-false">True / False</option>
-          <option value="timed">Timed Challenge</option>
+          {quizTypes.map((type) => (
+            <option key={type.id} value={type.id}>
+              {type.name}
+            </option>
+          ))}
         </select>
       </div>
 
