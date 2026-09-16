@@ -1,85 +1,154 @@
 import { createContext, useContext, useEffect, useState } from 'react'
-import { questions as defaultQuestions } from '../questions'
-
-const BANK_KEY = 'quizBank'
-const SETTINGS_KEY = 'quizSettings'
-
-const defaultSettings = {
-  quizType: 'multiple-choice',
-  perSession: 5,
-  shuffleQuestions: false,
-  shuffleAnswers: false,
-  revealAnswer: 'immediate',
-}
-
-function loadBank() {
-  try {
-    const raw = localStorage.getItem(BANK_KEY)
-    if (raw) return JSON.parse(raw)
-  } catch {
-    /* fall through to defaults */
-  }
-  return defaultQuestions.map((q) => ({ id: crypto.randomUUID(), ...q }))
-}
-
-function loadSettings() {
-  try {
-    const raw = localStorage.getItem(SETTINGS_KEY)
-    if (raw) return { ...defaultSettings, ...JSON.parse(raw) }
-  } catch {
-    /* fall through to defaults */
-  }
-  return defaultSettings
-}
+import { loadQuizzes, saveQuizzes } from '../data'
 
 const QuizContext = createContext(null)
 
+const initialQuizzes = loadQuizzes()
+
 export function QuizProvider({ children }) {
-  const [bank, setBank] = useState(loadBank)
-  const [settings, setSettings] = useState(loadSettings)
+  const [quizzes, setQuizzes] = useState(() => initialQuizzes)
+  const [activeQuizId, setActiveQuizId] = useState(
+    () => initialQuizzes[0]?.id ?? null,
+  )
+  const [playerName, setPlayerName] = useState('')
+  const [result, setResult] = useState(null)
 
   useEffect(() => {
-    localStorage.setItem(BANK_KEY, JSON.stringify(bank))
-  }, [bank])
+    saveQuizzes(quizzes)
+  }, [quizzes])
 
-  useEffect(() => {
-    localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings))
-  }, [settings])
+  const activeQuiz = quizzes.find((quiz) => quiz.id === activeQuizId) ?? null
 
-  const addQuestions = (parsed) =>
-    setBank((prev) => [
-      ...prev,
-      ...parsed.map((q) => ({ id: crypto.randomUUID(), ...q })),
-    ])
-
-  const addQuestion = (q) =>
-    setBank((prev) => [
-      ...prev,
-      {
-        id: crypto.randomUUID(),
-        question: q?.question ?? '',
-        options: q?.options ?? ['', '', '', ''],
-        correctIndex: q?.correctIndex ?? 0,
+  const createQuiz = () => {
+    const quiz = {
+      id: crypto.randomUUID(),
+      title: 'New Quiz',
+      type: 'multiple-choice',
+      createdBy: 'Admin',
+      questions: [],
+      settings: {
+        questionsPerSession: 5,
+        shuffleQuestions: false,
+        shuffleAnswers: false,
+        showAnswerMode: 'immediate',
       },
+    }
+    setQuizzes((prev) => [...prev, quiz])
+    setActiveQuizId(quiz.id)
+    return quiz.id
+  }
+
+  const deleteQuiz = (id) => {
+    setQuizzes((prev) => prev.filter((quiz) => quiz.id !== id))
+    setActiveQuizId((current) => (current === id ? null : current))
+  }
+
+  const updateQuiz = (id, patch) =>
+    setQuizzes((prev) =>
+      prev.map((quiz) => (quiz.id === id ? { ...quiz, ...patch } : quiz)),
+    )
+
+  const updateActiveQuiz = (patch) => {
+    if (!activeQuizId) return
+    updateQuiz(activeQuizId, patch)
+  }
+
+  const updateQuizSettings = (id, patch) =>
+    setQuizzes((prev) =>
+      prev.map((quiz) =>
+        quiz.id === id
+          ? { ...quiz, settings: { ...quiz.settings, ...patch } }
+          : quiz,
+      ),
+    )
+
+  const updateActiveSettings = (patch) => {
+    if (!activeQuizId) return
+    updateQuizSettings(activeQuizId, patch)
+  }
+
+  const addQuestions = (quizId, parsed) =>
+    setQuizzes((prev) =>
+      prev.map((quiz) =>
+        quiz.id === quizId
+          ? {
+              ...quiz,
+              questions: [
+                ...quiz.questions,
+                ...parsed.map((q) => ({ id: crypto.randomUUID(), ...q })),
+              ],
+            }
+          : quiz,
+      ),
+    )
+
+  const addQuestionsToActive = (parsed) => {
+    if (!activeQuizId) return
+    addQuestions(activeQuizId, parsed)
+  }
+
+  const addQuestionToActive = () => {
+    addQuestionsToActive([
+      { question: '', options: ['', '', '', ''], correctIndex: 0 },
     ])
+  }
 
-  const updateQuestion = (id, patch) =>
-    setBank((prev) => prev.map((q) => (q.id === id ? { ...q, ...patch } : q)))
+  const updateQuestionInQuiz = (quizId, questionId, patch) =>
+    setQuizzes((prev) =>
+      prev.map((quiz) =>
+        quiz.id === quizId
+          ? {
+              ...quiz,
+              questions: quiz.questions.map((q) =>
+                q.id === questionId ? { ...q, ...patch } : q,
+              ),
+            }
+          : quiz,
+      ),
+    )
 
-  const removeQuestion = (id) =>
-    setBank((prev) => prev.filter((q) => q.id !== id))
+  const updateQuestionInActive = (questionId, patch) => {
+    if (!activeQuizId) return
+    updateQuestionInQuiz(activeQuizId, questionId, patch)
+  }
 
-  const setSetting = (name, value) =>
-    setSettings((prev) => ({ ...prev, [name]: value }))
+  const removeQuestionFromQuiz = (quizId, questionId) =>
+    setQuizzes((prev) =>
+      prev.map((quiz) =>
+        quiz.id === quizId
+          ? {
+              ...quiz,
+              questions: quiz.questions.filter((q) => q.id !== questionId),
+            }
+          : quiz,
+      ),
+    )
+
+  const removeQuestionFromActive = (questionId) => {
+    if (!activeQuizId) return
+    removeQuestionFromQuiz(activeQuizId, questionId)
+  }
+
+  const startResult = (summary) => setResult(summary)
 
   const value = {
-    bank,
-    settings,
-    addQuestions,
-    addQuestion,
-    updateQuestion,
-    removeQuestion,
-    setSetting,
+    quizzes,
+    activeQuiz,
+    activeQuizId,
+    playerName,
+    result,
+    setPlayerName,
+    setActiveQuizId,
+    createQuiz,
+    deleteQuiz,
+    updateQuiz,
+    updateActiveQuiz,
+    updateActiveSettings,
+    addQuestionsToActive,
+    addQuestionToActive,
+    updateQuestionInActive,
+    removeQuestionFromActive,
+    startResult,
   }
 
   return <QuizContext.Provider value={value}>{children}</QuizContext.Provider>

@@ -1,27 +1,31 @@
 import { useQuiz } from '../../context/QuizContext'
 
 export default function QuestionsTab() {
-  const { bank, addQuestion, updateQuestion, removeQuestion } = useQuiz()
+  const { activeQuiz, addQuestionToActive, updateQuestionInActive, removeQuestionFromActive } =
+    useQuiz()
+
+  if (!activeQuiz) return null
 
   return (
     <div className="bank">
       <div className="bank-header">
-        <h2 className="admin-heading">Question bank ({bank.length})</h2>
-        <button
-          className="primary-btn add-q-btn"
-          onClick={() => addQuestion()}
-        >
+        <h2 className="admin-heading">
+          Questions ({activeQuiz.questions.length})
+        </h2>
+        <button className="primary-btn add-q-btn" onClick={addQuestionToActive}>
           Add question
         </button>
       </div>
 
       <div className="q-list">
-        {bank.map((q) => (
+        {activeQuiz.questions.map((q) => (
           <div key={q.id} className="card admin-card q-card">
             <input
               className="q-input q-question-input"
               value={q.question}
-              onChange={(e) => updateQuestion(q.id, { question: e.target.value })}
+              onChange={(e) =>
+                updateQuestionInActive(q.id, { question: e.target.value })
+              }
               placeholder="Question text"
             />
 
@@ -31,7 +35,9 @@ export default function QuestionsTab() {
                   type="radio"
                   name={q.id}
                   checked={q.correctIndex === oi}
-                  onChange={() => updateQuestion(q.id, { correctIndex: oi })}
+                  onChange={() =>
+                    updateQuestionInActive(q.id, { correctIndex: oi })
+                  }
                   title="Mark as correct"
                   className="q-radio"
                 />
@@ -41,7 +47,7 @@ export default function QuestionsTab() {
                   onChange={(e) => {
                     const options = [...q.options]
                     options[oi] = e.target.value
-                    updateQuestion(q.id, { options })
+                    updateQuestionInActive(q.id, { options })
                   }}
                   placeholder={`Option ${String.fromCharCode(65 + oi)}`}
                 />
@@ -51,7 +57,7 @@ export default function QuestionsTab() {
             <div className="q-card-footer">
               <button
                 className="delete-btn"
-                onClick={() => removeQuestion(q.id)}
+                onClick={() => removeQuestionFromActive(q.id)}
               >
                 Delete
               </button>

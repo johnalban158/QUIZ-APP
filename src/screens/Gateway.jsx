@@ -13,7 +13,7 @@ export default function Gateway() {
         <Link to="/admin" className="gateway-btn gateway-admin">
           Admin
         </Link>
-        <Link to="/play" className="gateway-btn gateway-play">
+        <Link to="/play/name" className="gateway-btn gateway-play">
           Player
         </Link>
       </div>

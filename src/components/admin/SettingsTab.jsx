@@ -1,7 +1,11 @@
 import { useQuiz } from '../../context/QuizContext'
 
 export default function SettingsTab() {
-  const { settings, setSetting } = useQuiz()
+  const { activeQuiz, updateActiveQuiz, updateActiveSettings } = useQuiz()
+
+  if (!activeQuiz) return null
+
+  const { settings } = activeQuiz
 
   return (
     <div className="card admin-card">
@@ -11,8 +15,8 @@ export default function SettingsTab() {
         <label className="setting-label">Quiz type</label>
         <select
           className="setting-input"
-          value={settings.quizType}
-          onChange={(e) => setSetting('quizType', e.target.value)}
+          value={activeQuiz.type}
+          onChange={(e) => updateActiveQuiz({ type: e.target.value })}
         >
           <option value="multiple-choice">Multiple Choice</option>
           <option value="true-false">True / False</option>
@@ -26,9 +30,11 @@ export default function SettingsTab() {
           type="number"
           min={1}
           className="setting-input setting-number"
-          value={settings.perSession}
+          value={settings.questionsPerSession}
           onChange={(e) =>
-            setSetting('perSession', Math.max(1, Number(e.target.value) || 1))
+            updateActiveSettings({
+              questionsPerSession: Math.max(1, Number(e.target.value) || 1),
+            })
           }
         />
       </div>
@@ -39,7 +45,9 @@ export default function SettingsTab() {
           type="checkbox"
           className="setting-toggle"
           checked={settings.shuffleQuestions}
-          onChange={(e) => setSetting('shuffleQuestions', e.target.checked)}
+          onChange={(e) =>
+            updateActiveSettings({ shuffleQuestions: e.target.checked })
+          }
         />
       </div>
 
@@ -49,7 +57,9 @@ export default function SettingsTab() {
           type="checkbox"
           className="setting-toggle"
           checked={settings.shuffleAnswers}
-          onChange={(e) => setSetting('shuffleAnswers', e.target.checked)}
+          onChange={(e) =>
+            updateActiveSettings({ shuffleAnswers: e.target.checked })
+          }
         />
       </div>
 
@@ -57,8 +67,10 @@ export default function SettingsTab() {
         <label className="setting-label">Show correct answer</label>
         <select
           className="setting-input"
-          value={settings.revealAnswer}
-          onChange={(e) => setSetting('revealAnswer', e.target.value)}
+          value={settings.showAnswerMode}
+          onChange={(e) =>
+            updateActiveSettings({ showAnswerMode: e.target.value })
+          }
         >
           <option value="immediate">Immediately after answering</option>
           <option value="end">Only at the end</option>

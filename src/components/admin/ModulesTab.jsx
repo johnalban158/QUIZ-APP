@@ -58,7 +58,7 @@ function parseQuestions(raw) {
 }
 
 export default function ModulesTab() {
-  const { addQuestions } = useQuiz()
+  const { addQuestionsToActive, activeQuizId } = useQuiz()
   const [raw, setRaw] = useState('')
   const [preview, setPreview] = useState([])
   const [status, setStatus] = useState('')
@@ -70,8 +70,13 @@ export default function ModulesTab() {
       setStatus('No valid questions found. Check the format.')
       return
     }
-    addQuestions(parsed)
-    setStatus(`Added ${parsed.length} questions to the bank.`)
+    if (!activeQuizId) {
+      setStatus('No quiz selected. Create a quiz first.')
+      return
+    }
+    addQuestionsToActive(parsed)
+    setStatus(`Added ${parsed.length} questions to the quiz.`)
+    setRaw('')
   }
 
   return (
@@ -114,7 +119,9 @@ Answer: B`}
                   <li
                     key={oi}
                     className={
-                      oi === q.correctIndex ? 'preview-option preview-correct' : 'preview-option'
+                      oi === q.correctIndex
+                        ? 'preview-option preview-correct'
+                        : 'preview-option'
                     }
                   >
                     {String.fromCharCode(65 + oi)}) {option}
