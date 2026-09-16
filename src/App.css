@@ -210,3 +210,63 @@ body {
     font-size: 1.35rem;
   }
 }
+
+.gateway {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+.gateway-card {
+  background: var(--card-bg);
+  border-radius: 1rem;
+  padding: 2rem;
+  width: 100%;
+  max-width: 22rem;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.35);
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.gateway-title {
+  margin: 0 0 0.25rem;
+  text-align: center;
+  font-weight: 800;
+  font-size: 1.25rem;
+}
+
+.gateway-btn {
+  display: block;
+  text-align: center;
+  padding: 0.9rem;
+  border-radius: 0.75rem;
+  text-decoration: none;
+  font-weight: 800;
+  transition: filter 0.15s ease, transform 0.1s ease;
+}
+
+.gateway-btn:hover {
+  filter: brightness(1.08);
+}
+
+.gateway-btn:active {
+  transform: scale(0.98);
+}
+
+.gateway-admin {
+  background: var(--accent);
+  color: var(--bg);
+}
+
+.gateway-play {
+  background: var(--correct);
+  color: #ffffff;
+}
+
+.empty-state {
+  text-align: center;
+}

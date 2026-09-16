@@ -1,0 +1,272 @@
+.admin-layout {
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: 220px 1fr;
+  grid-template-rows: auto 1fr;
+}
+
+.admin-brand {
+  grid-column: 1 / -1;
+  position: relative;
+}
+
+.admin-back {
+  position: absolute;
+  right: 1.25rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--accent);
+  text-decoration: none;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.admin-back:hover {
+  text-decoration: underline;
+}
+
+.admin-sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 1rem;
+  background: rgba(255, 255, 255, 0.04);
+  border-right: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.admin-tab {
+  text-align: left;
+  padding: 0.8rem 1rem;
+  border: none;
+  border-radius: 0.75rem;
+  background: transparent;
+  color: #c9c9e0;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.admin-tab:hover {
+  background: rgba(255, 255, 255, 0.06);
+  color: #ffffff;
+}
+
+.admin-tab.active {
+  background: var(--accent);
+  color: var(--bg);
+}
+
+.admin-content {
+  padding: 1.25rem;
+  max-width: 52rem;
+}
+
+.admin-card {
+  margin-bottom: 1.25rem;
+}
+
+.admin-heading {
+  margin: 0 0 0.75rem;
+  font-size: 1.25rem;
+}
+
+.admin-sub {
+  color: var(--muted);
+  margin: 0 0 0.75rem;
+}
+
+.format-sample {
+  background: rgba(27, 27, 58, 0.06);
+  border: 1px solid var(--border);
+  border-radius: 0.75rem;
+  padding: 1rem;
+  font-size: 0.85rem;
+  overflow-x: auto;
+  white-space: pre-wrap;
+}
+
+.module-input {
+  width: 100%;
+  margin: 0.75rem 0;
+  padding: 0.9rem;
+  border: 2px solid var(--border);
+  border-radius: 0.75rem;
+  font-family: ui-monospace, Consolas, monospace;
+  font-size: 0.9rem;
+  resize: vertical;
+  background: #ffffff;
+}
+
+.module-input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.preview-list {
+  margin-top: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.preview-item {
+  border: 1px solid var(--border);
+  border-radius: 0.75rem;
+  padding: 1rem;
+}
+
+.preview-question {
+  margin: 0 0 0.5rem;
+  font-weight: 700;
+}
+
+.preview-options {
+  margin: 0;
+  padding-left: 1.25rem;
+  list-style: none;
+}
+
+.preview-option {
+  padding: 0.15rem 0;
+  color: var(--muted);
+}
+
+.preview-correct {
+  color: var(--correct);
+  font-weight: 700;
+}
+
+.bank-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+}
+
+.add-q-btn {
+  width: auto;
+  padding: 0.7rem 1.25rem;
+}
+
+.q-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.q-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.q-input {
+  width: 100%;
+  padding: 0.7rem 0.8rem;
+  border: 2px solid var(--border);
+  border-radius: 0.6rem;
+  font-size: 0.95rem;
+  background: #ffffff;
+}
+
+.q-input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.q-question-input {
+  font-weight: 700;
+}
+
+.q-option-row {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.q-radio {
+  accent-color: var(--correct);
+  width: 1.1rem;
+  height: 1.1rem;
+  flex-shrink: 0;
+}
+
+.q-card-footer {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.delete-btn {
+  border: none;
+  background: transparent;
+  color: var(--incorrect);
+  font-weight: 700;
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+
+.delete-btn:hover {
+  text-decoration: underline;
+}
+
+.setting-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.6rem 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.setting-row:last-of-type {
+  border-bottom: none;
+}
+
+.setting-label {
+  font-weight: 600;
+}
+
+.setting-input {
+  padding: 0.6rem 0.8rem;
+  border: 2px solid var(--border);
+  border-radius: 0.6rem;
+  font-size: 0.95rem;
+  background: #ffffff;
+  min-width: 14rem;
+}
+
+.setting-input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.setting-number {
+  min-width: 5rem;
+  width: 6rem;
+}
+
+.setting-toggle {
+  accent-color: var(--accent);
+  width: 1.3rem;
+  height: 1.3rem;
+}
+
+@media (max-width: 768px) {
+  .admin-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-sidebar {
+    flex-direction: row;
+    overflow-x: auto;
+    border-right: none;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  }
+
+  .admin-tab {
+    white-space: nowrap;
+    text-align: center;
+  }
+}
