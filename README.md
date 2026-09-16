@@ -1,32 +1,127 @@
-# React + TypeScript + Vite
+# Quiz App
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+A full-stack quiz platform with two roles:
 
-Currently, two official plugins are available:
+- **Admin** — create/edit/delete modules (quiz sets), add/edit/reorder questions with 4 options each, publish/draft modules, and review all submissions (score, percentage, per-question breakdown).
+- **Quiz Taker** — no login needed; enters name/email, picks a published module, answers one question at a time, and sees a score with a per-question breakdown. Submissions are saved so the admin can review them.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## Tech stack
 
-## React Compiler
+| Layer      | Tech                                  |
+| ---------- | ------------------------------------- |
+| Frontend   | React 19 + Vite + React Router        |
+| Backend    | Node.js + Express (REST API)          |
+| Database   | PostgreSQL (via Prisma ORM)           |
+| Auth       | JWT (admin routes protected)          |
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## Requirements
 
-## Expanding the Oxlint configuration
+- Node.js 20+ and npm
+- PostgreSQL 16 running locally on port 5432
 
-If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
+## Setting up the project
 
-```json
-{
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc"],
-  "options": {
-    "typeAware": true
-  },
-  "rules": {
-    "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
-}
+### 1. Install dependencies
+
+At the project root:
+
+```bash
+npm install
+npm --prefix server install
 ```
 
-See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
+### 2. Configure the database
+
+Create the database (one time):
+
+```bash
+& "C:\Program Files\PostgreSQL\16\bin\psql.exe" -U postgres -c "CREATE DATABASE quizapp;"
+```
+
+Set your database credentials in `server/.env`:
+
+```
+DATABASE_URL="postgresql://postgres:YOUR_PASSWORD@localhost:5432/quizapp?schema=public"
+JWT_SECRET="change-this-to-a-long-random-string"
+PORT=4000
+```
+
+Create the tables and seed demo data:
+
+```bash
+npm --prefix server run db:push
+npm --prefix server run db:seed
+```
+
+`db:push` syncs the Prisma schema to PostgreSQL; `db:seed` adds the demo admin account and two sample modules (one published with 3 questions).
+
+### 3. Run everything
+
+One command starts both the API (port 4000) and the Vite frontend (port 5173):
+
+```bash
+npm run dev
+```
+
+Open http://localhost:5173
+
+To run them separately:
+
+```bash
+npm run dev:server   # API on http://localhost:4000
+npm run dev:web      # frontend on http://localhost:5173
+```
+
+The frontend proxies `/api/*` to the backend in development (see `vite.config.ts`).
+
+## Demo credentials
+
+Login at http://localhost:5173/admin/login
+
+```
+Email:    admin@quizapp.com
+Password: admin123
+```
+
+## Featured routes
+
+| Route                     | Purpose                                    |
+| ------------------------- | ------------------------------------------ |
+| `/`                       | Landing page                               |
+| `/admin`                  | Admin → list & create modules              |
+| `/admin/modules/:id`      | Admin → edit module, questions, reorder    |
+| `/admin/submissions`      | Admin → submissions table (filter/sort)    |
+| `/admin/submissions/:id`  | Admin → full answer breakdown              |
+| `/quiz`                   | Published modules (taker)                  |
+| `/quiz/:id`               | Take the quiz (one question at a time)     |
+| `/quiz/:id/result`        | Score + answer breakdown                   |
+
+## API overview
+
+- `POST /api/auth/login` — admin login (JWT)
+- `GET/POST/PATCH/DELETE /api/admin/modules` — module CRUD
+- `POST/PUT/PATCH/DELETE /api/admin/modules/:id/questions...` — question CRUD + reorder
+- `GET /api/admin/submissions?moduleId=&sort=&order=` — submissions list
+- `GET /api/admin/submissions/:id` — submission detail with answers
+- `GET /api/quiz` — published modules for takers
+- `GET /api/quiz/:id` — public quiz (no correct answers included)
+- `POST /api/quiz/:id/submit` — grade + save a submission
+
+## Project structure
+
+```
+├── server/                 # Express + Prisma backend
+│   ├── prisma/
+│   │   ├── schema.prisma   # data model
+│   │   └── seed.js         # demo data
+│   └── src/
+│       ├── index.js        # server entry
+│       ├── middleware/auth.js
+│       └── routes/         # auth, modules, submissions, quiz
+└── src/                    # React frontend
+    ├── pages/              # screens (admin/ and quiz/)
+    ├── components/
+    ├── context/AuthContext.jsx
+    ├── api.js              # fetch wrapper
+    └── App.jsx             # routes
+```
