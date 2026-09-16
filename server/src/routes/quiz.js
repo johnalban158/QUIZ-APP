@@ -41,12 +41,15 @@ router.get('/:id', async (req, res) => {
 })
 
 router.post('/:id/submit', async (req, res) => {
-  const { takerName, takerEmail, answers } = req.body ?? {}
+  const { takerName, takerEmail, answers, timeTakenSeconds } = req.body ?? {}
   if (!takerName || !takerName.trim()) {
     return res.status(400).json({ error: 'Name is required' })
   }
   if (!Array.isArray(answers) || answers.length === 0) {
     return res.status(400).json({ error: 'answers must be a non-empty array' })
+  }
+  if (timeTakenSeconds !== undefined && (!Number.isInteger(timeTakenSeconds) || timeTakenSeconds < 0)) {
+    return res.status(400).json({ error: 'timeTakenSeconds must be a non-negative integer' })
   }
 
   const module = await prisma.module.findFirst({
@@ -93,6 +96,7 @@ router.post('/:id/submit', async (req, res) => {
       takerEmail: (takerEmail ?? '').trim(),
       score,
       total,
+      timeTakenSeconds: timeTakenSeconds ?? null,
       answers: { create: answerLines },
     },
   })
@@ -104,6 +108,7 @@ router.post('/:id/submit', async (req, res) => {
     score,
     total,
     percent: total ? Math.round((score / total) * 100) : 0,
+    timeTakenSeconds: submission.timeTakenSeconds,
     breakdown,
   })
 })

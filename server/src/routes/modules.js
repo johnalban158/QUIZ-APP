@@ -11,7 +11,7 @@ const withQuestions = {
     orderBy: { orderIndex: 'asc' },
     include: { options: { orderBy: { id: 'asc' } } },
   },
-  _count: { select: { submissions: true } },
+  _count: { select: { submissions: true, questions: true } },
 }
 
 function normalizeOptions(options) {
@@ -25,12 +25,53 @@ function normalizeOptions(options) {
   return options.map((o) => ({ text: String(o.text ?? '').trim(), isCorrect: !!o.isCorrect }))
 }
 
+async function enrichModulesWithStats(modules) {
+  if (modules.length === 0) return modules
+
+  const moduleIds = modules.map((m) => m.id)
+
+  const [avgScores, lastSubmissions] = await Promise.all([
+    prisma.submission.groupBy({
+      by: ['moduleId'],
+      where: { moduleId: { in: moduleIds } },
+      _avg: { score: true, total: true },
+    }),
+    prisma.submission.findMany({
+      where: { moduleId: { in: moduleIds } },
+      select: { moduleId: true, submittedAt: true },
+      orderBy: { submittedAt: 'desc' },
+      distinct: ['moduleId'],
+    }),
+  ])
+
+  const avgMap = new Map()
+  for (const row of avgScores) {
+    const avgScore = row._avg.score ?? 0
+    const avgTotal = row._avg.total ?? 1
+    avgMap.set(row.moduleId, avgTotal > 0 ? Math.round((avgScore / avgTotal) * 100) : 0)
+  }
+
+  const lastSubMap = new Map()
+  for (const row of lastSubmissions) {
+    if (!lastSubMap.has(row.moduleId)) {
+      lastSubMap.set(row.moduleId, row.submittedAt)
+    }
+  }
+
+  return modules.map((m) => ({
+    ...m,
+    avgScore: avgMap.get(m.id) ?? null,
+    lastSubmittedAt: lastSubMap.get(m.id) ?? null,
+  }))
+}
+
 router.get('/', async (req, res) => {
   const modules = await prisma.module.findMany({
     include: withQuestions,
     orderBy: { createdAt: 'desc' },
   })
-  res.json(modules)
+  const enriched = await enrichModulesWithStats(modules)
+  res.json(enriched)
 })
 
 router.post('/', async (req, res) => {

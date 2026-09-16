@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
-import { ArrowLeft, ArrowUp, ArrowDown, Plus, Pencil, Trash2, Check } from 'lucide-react'
+import { ArrowDown, ArrowLeft, ArrowUp, Check, ClipboardList, FileQuestion, Pencil, Plus, Trash2 } from 'lucide-react'
 import { api } from '../../api'
 
 const EMPTY_OPTIONS = [
@@ -132,11 +132,18 @@ export default function ModuleEditor() {
     }
   }
 
-  if (!mod && !error) return <div className="loading">Loading…</div>
+  if (!mod && !error) {
+    return (
+      <div className="loading">
+        <span className="spinner" />
+        Loading…
+      </div>
+    )
+  }
 
   return (
-    <>
-      <Link to="/admin" className="btn btn-ghost btn-sm" style={{ marginBottom: 16 }}>
+    <div>
+      <Link to="/admin" className="back-link">
         <ArrowLeft size={16} /> Back to modules
       </Link>
 
@@ -146,11 +153,14 @@ export default function ModuleEditor() {
         <div className="editor">
           {/* meta */}
           <div className="editor-section">
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, marginBottom: 16 }}>
-              <h2 style={{ marginBottom: 0 }}>Module details</h2>
-              <div className="status-switch">
-                <button className={mod.status === 'DRAFT' ? 'on' : ''} onClick={toggleStatus}>Draft</button>
-                <button className={mod.status === 'PUBLISHED' ? 'on' : ''} onClick={toggleStatus}>Published</button>
+            <div className="section-head">
+              <span className="section-head-icon"><ClipboardList size={18} /></span>
+              <div className="section-head-text">
+                <h2>Module details</h2>
+              </div>
+              <div className="status-switch" aria-label={`Module status: ${mod.status === 'PUBLISHED' ? 'Published' : 'Draft'}`}>
+                <button type="button" className={mod.status === 'DRAFT' ? 'on' : ''} onClick={toggleStatus}>Draft</button>
+                <button type="button" className={mod.status === 'PUBLISHED' ? 'on' : ''} onClick={toggleStatus}>Published</button>
               </div>
             </div>
             <div className="field">
@@ -165,8 +175,11 @@ export default function ModuleEditor() {
 
           {/* questions */}
           <div className="editor-section">
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-              <h2 style={{ marginBottom: 0 }}>Questions ({mod.questions.length})</h2>
+            <div className="section-head" style={{ marginBottom: 18 }}>
+              <span className="section-head-icon"><FileQuestion size={18} /></span>
+              <div className="section-head-text">
+                <h2>Questions ({mod.questions.length})</h2>
+              </div>
               {!adding && (
                 <button className="btn btn-primary btn-sm" onClick={() => setAdding(true)}>
                   <Plus size={15} /> Add question
@@ -195,6 +208,7 @@ export default function ModuleEditor() {
                       placeholder={`Option ${String.fromCharCode(65 + i)}`}
                     />
                     <button
+                      type="button"
                       className={`mark-btn ${opt.isCorrect ? 'on' : ''}`}
                       onClick={() => {
                         const next = addOpts.map((o, j) => ({ ...o, isCorrect: j === i }))
@@ -239,6 +253,7 @@ export default function ModuleEditor() {
                           }}
                         />
                         <button
+                          type="button"
                           className={`mark-btn ${opt.isCorrect ? 'on' : ''}`}
                           onClick={() => {
                             const next = editOpts.map((o, k) => ({ ...o, isCorrect: k === j }))
@@ -260,10 +275,10 @@ export default function ModuleEditor() {
                       <span className="qcard-num">{i + 1}</span>
                       <span className="qcard-text">{q.text}</span>
                       <span className="qcard-actions">
-                        <button className="icon-btn" title="Move up" onClick={() => reorder(q.id, -1)} disabled={i === 0}><ArrowUp size={15} /></button>
-                        <button className="icon-btn" title="Move down" onClick={() => reorder(q.id, 1)} disabled={i === mod.questions.length - 1}><ArrowDown size={15} /></button>
-                        <button className="icon-btn" title="Edit" onClick={() => startEdit(q)}><Pencil size={15} /></button>
-                        <button className="icon-btn danger" title="Delete" onClick={() => deleteQuestion(q.id)}><Trash2 size={15} /></button>
+                        <button type="button" className="icon-btn" title="Move up" aria-label="Move question up" onClick={() => reorder(q.id, -1)} disabled={i === 0}><ArrowUp size={15} /></button>
+                        <button type="button" className="icon-btn" title="Move down" aria-label="Move question down" onClick={() => reorder(q.id, 1)} disabled={i === mod.questions.length - 1}><ArrowDown size={15} /></button>
+                        <button type="button" className="icon-btn" title="Edit" aria-label="Edit question" onClick={() => startEdit(q)}><Pencil size={15} /></button>
+                        <button type="button" className="icon-btn danger" title="Delete" aria-label="Delete question" onClick={() => deleteQuestion(q.id)}><Trash2 size={15} /></button>
                       </span>
                     </div>
                     <div className="opt-list">
@@ -282,6 +297,6 @@ export default function ModuleEditor() {
           </div>
         </div>
       )}
-    </>
+    </div>
   )
 }

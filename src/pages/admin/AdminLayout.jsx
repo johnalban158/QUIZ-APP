@@ -1,5 +1,5 @@
 import { NavLink, Outlet, Navigate } from 'react-router-dom'
-import { BookOpen, ListChecks } from 'lucide-react'
+import { BookOpen, ListChecks, LogOut } from 'lucide-react'
 import { useAuth } from '../../context/AuthContext'
 import { AdminBrand } from '../../components/Brand'
 
@@ -17,19 +17,35 @@ export default function AdminLayout() {
     <>
       <AdminBrand user={user} logout={logout} />
       <div className="admin">
-        <nav className="admin-side">
-          <p className="admin-side-heading">Menu</p>
-          <div className="admin-nav">
-            {tabs.map((tab) => (
-              <NavLink
-                key={tab.to}
-                to={tab.to}
-                end={tab.end}
-                className={({ isActive }) => isActive ? 'active' : ''}
-              >
-                <tab.icon size={17} /> {tab.label}
-              </NavLink>
-            ))}
+        <nav className="admin-side" aria-label="Admin">
+          <div className="admin-side-user">
+            <span className="avatar">{(user.name || 'A')[0].toUpperCase()}</span>
+            <div>
+              <p className="admin-side-user-name">{user.name || 'Admin'}</p>
+              <p className="admin-side-user-role">Administrator</p>
+            </div>
+          </div>
+
+          <div className="admin-nav-wrap">
+            <p className="admin-side-heading">Menu</p>
+            <div className="admin-nav">
+              {tabs.map((tab) => (
+                <NavLink
+                  key={tab.to}
+                  to={tab.to}
+                  end={tab.end}
+                  className={({ isActive }) => (isActive ? 'active' : '')}
+                >
+                  <tab.icon size={17} /> {tab.label}
+                </NavLink>
+              ))}
+            </div>
+          </div>
+
+          <div className="admin-side-foot">
+            <button type="button" className="admin-logout" onClick={logout}>
+              <LogOut size={16} /> Log out
+            </button>
           </div>
         </nav>
         <main className="admin-main">

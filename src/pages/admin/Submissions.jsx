@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ListChecks } from 'lucide-react'
+import { Inbox, ListChecks } from 'lucide-react'
 import { api } from '../../api'
 
 export default function Submissions() {
@@ -36,11 +36,16 @@ export default function Submissions() {
 
   return (
     <>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 8 }}>
-        <ListChecks size={24} style={{ color: 'var(--accent)' }} />
-        <h1 style={{ margin: 0 }}>Submissions</h1>
+      <div className="section-head">
+        <span className="section-head-icon"><ListChecks size={18} /></span>
+        <div>
+          <h1 style={{ margin: 0 }}>Submissions</h1>
+          <p className="page-sub">All quiz attempts — filter by module, sort by date or score.</p>
+        </div>
+        {subs !== null && subs.length > 0 && (
+          <span className="chip">{subs.length} attempt{subs.length === 1 ? '' : 's'}</span>
+        )}
       </div>
-      <p className="page-sub">All quiz attempts — filter by module, sort by date or score.</p>
 
       {error && <div className="form-error">{error}</div>}
 
@@ -70,9 +75,13 @@ export default function Submissions() {
       </div>
 
       {subs === null ? (
-        <div className="loading">Loading…</div>
+        <div className="loading">
+          <span className="spinner" />
+          Loading…
+        </div>
       ) : subs.length === 0 ? (
         <div className="card empty">
+          <span className="empty-icon"><Inbox size={20} /></span>
           <h3>No submissions yet</h3>
           <p>Submissions will appear here once someone takes a published quiz.</p>
         </div>
@@ -88,17 +97,20 @@ export default function Submissions() {
               </tr>
             </thead>
             <tbody>
-              {subs.map((s) => (
-                <tr key={s.id} style={{ cursor: 'pointer' }} onClick={() => navigate(`/admin/submissions/${s.id}`)}>
-                  <td style={{ fontWeight: 600 }}>{s.takerName}</td>
-                  <td>{s.module?.title ?? '—'}</td>
-                  <td>
-                    {s.score}/{s.total}{' '}
-                    <span className="badge badge-ok" style={{ marginLeft: 6 }}>{Math.round((s.score / s.total) * 100)}%</span>
-                  </td>
-                  <td>{new Date(s.submittedAt).toLocaleString()}</td>
-                </tr>
-              ))}
+              {subs.map((s) => {
+                const p = s.total ? Math.round((s.score / s.total) * 100) : 0
+                return (
+                  <tr key={s.id} style={{ cursor: 'pointer' }} onClick={() => navigate(`/admin/submissions/${s.id}`)}>
+                    <td style={{ fontWeight: 600 }}>{s.takerName}</td>
+                    <td>{s.module?.title ?? '—'}</td>
+                    <td>
+                      {s.score}/{s.total}{' '}
+                      <span className={`badge ${p >= 70 ? 'badge-ok' : 'badge-bad'}`} style={{ marginLeft: 6 }}>{p}%</span>
+                    </td>
+                    <td className="muted">{new Date(s.submittedAt).toLocaleString()}</td>
+                  </tr>
+                )
+              })}
             </tbody>
           </table>
         </div>

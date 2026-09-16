@@ -59,15 +59,16 @@ model QuestionOption {
 }
 
 model Submission {
-  id          String             @id @default(cuid())
-  moduleId    String
-  module      Module             @relation(fields: [moduleId], references: [id], onDelete: Cascade)
-  takerName   String
-  takerEmail  String
-  score       Int
-  total       Int
-  submittedAt DateTime           @default(now())
-  answers     SubmissionAnswer[]
+  id              String             @id @default(cuid())
+  moduleId        String
+  module          Module             @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  takerName       String
+  takerEmail      String
+  score           Int
+  total           Int
+  timeTakenSeconds Int?
+  submittedAt     DateTime           @default(now())
+  answers         SubmissionAnswer[]
 }
 
 model SubmissionAnswer {

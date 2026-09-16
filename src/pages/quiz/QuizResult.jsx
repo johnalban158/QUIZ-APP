@@ -1,5 +1,5 @@
 import { useLocation, useNavigate, useParams } from 'react-router-dom'
-import { CheckCircle, XCircle, RotateCcw, LayoutList, Trophy } from 'lucide-react'
+import { Award, CheckCircle, LayoutList, RotateCcw, Trophy, XCircle } from 'lucide-react'
 import Brand from '../../components/Brand'
 
 export default function QuizResult() {
@@ -13,18 +13,35 @@ export default function QuizResult() {
   }
 
   const { score, total, percent, moduleTitle, takerName, breakdown } = state
+  const pct = Math.round(percent)
+
+  let verdict
+  if (percent >= 80) verdict = { title: 'Excellent work!', icon: Trophy, color: 'var(--ok)' }
+  else if (percent >= 50) verdict = { title: 'Good job!', icon: Award, color: 'var(--ok)' }
+  else verdict = { title: 'Keep practicing', icon: Award, color: 'var(--bad)' }
+
+  const VerdictIcon = verdict.icon
+  const ringDeg = `${Math.round((pct / 100) * 360)}deg`
 
   return (
     <>
-      <Brand right={`${takerName}`} />
+      <Brand back="/quiz" backLabel="All quizzes" right={takerName} />
       <div className="quiz-shell">
         <div className="card result-card">
-          <Trophy size={48} style={{ color: percent >= 70 ? 'var(--ok)' : 'var(--bad)', marginBottom: 12 }} />
-          <div className="score-num">{score}/{total}</div>
-          <p className="score-pct">{percent}% correct</p>
-          <h2 style={{ fontSize: '1.1rem', marginBottom: 24 }}>{moduleTitle}</h2>
+          <div className="ring" style={{ '--ring-deg': ringDeg }}>
+            <div className="ring-inner">
+              <div className="score-num">{score}/{total}</div>
+              <div className="score-pct">{pct}% correct</div>
+            </div>
+          </div>
 
-          <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
+          <h2 className="result-verdict" style={{ color: verdict.color }}>
+            <VerdictIcon size={20} style={{ verticalAlign: -3, marginRight: 6 }} />
+            {verdict.title}
+          </h2>
+          <p className="result-msg">{moduleTitle}</p>
+
+          <div className="result-actions">
             <button className="btn btn-ghost" onClick={() => navigate('/quiz')}>
               <LayoutList size={16} /> All quizzes
             </button>
@@ -34,16 +51,13 @@ export default function QuizResult() {
           </div>
         </div>
 
-        {/* breakdown */}
         {Array.isArray(breakdown) && breakdown.length > 0 && (
           <div className="breakdown">
-            <h2 style={{ fontSize: '1.2rem', marginBottom: 12 }}>Answer breakdown</h2>
+            <h2 className="breakdown-title">Answer breakdown</h2>
             {breakdown.map((b, i) => (
-              <div key={i} className="card" style={{ marginBottom: 12, padding: '16px 20px' }}>
+              <div key={i} className="card br-card">
                 <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
-                  <div className={`br-icon ${b.isCorrect ? 'ok' : 'bad'}`}>
-                    {b.isCorrect ? <CheckCircle size={16} /> : <XCircle size={16} />}
-                  </div>
+                  <span className={`br-num ${b.isCorrect ? 'ok' : 'bad'}`}>{i + 1}</span>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div className="br-text">{b.questionText}</div>
                     <div className="br-sub">
@@ -52,6 +66,9 @@ export default function QuizResult() {
                         <span className="correct-line"> · Correct: {b.correctText}</span>
                       )}
                     </div>
+                  </div>
+                  <div className={`br-icon ${b.isCorrect ? 'ok' : 'bad'}`}>
+                    {b.isCorrect ? <CheckCircle size={16} /> : <XCircle size={16} />}
                   </div>
                 </div>
               </div>

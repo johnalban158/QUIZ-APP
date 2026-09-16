@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate, Navigate } from 'react-router-dom'
-import { Lock, Mail } from 'lucide-react'
+import { Info, Lock, Mail, ShieldCheck } from 'lucide-react'
 import { useAuth } from '../../context/AuthContext'
 import Brand from '../../components/Brand'
 
@@ -33,42 +33,52 @@ export default function AdminLogin() {
   }
 
   return (
-    <div className="login-page">
-      <Brand />
-      <form className="card login-card" onSubmit={handleSubmit}>
-        <h2 className="login-title">Admin login</h2>
-        <p className="login-sub">Demo credentials: admin@quizapp.com / admin123</p>
+    <>
+      <Brand back="/" backLabel="Back to home" />
+      <div className="login-page">
+        <form className="card login-card" onSubmit={handleSubmit}>
+          <div className="login-logo"><ShieldCheck size={26} /></div>
+          <h2 className="login-title">Admin login</h2>
+          <p className="login-sub">Sign in to manage modules and submissions.</p>
 
-        {error && <div className="form-error">{error}</div>}
+          <div className="demo-hint">
+            <Info size={15} style={{ flexShrink: 0, marginTop: 2 }} />
+            <span><strong>Demo:</strong> admin@quizapp.com · admin123</span>
+          </div>
 
-        <div className="field">
-          <label><Mail size={14} /> Email</label>
-          <input
-            className="input"
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="admin@quizapp.com"
-            required
-          />
-        </div>
+          {error && <div className="form-error">{error}</div>}
 
-        <div className="field">
-          <label><Lock size={14} /> Password</label>
-          <input
-            className="input"
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            placeholder="••••••••"
-            required
-          />
-        </div>
+          <div className="field">
+            <label><Mail size={14} /> Email</label>
+            <input
+              className="input input-lg"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="admin@quizapp.com"
+              autoComplete="email"
+              required
+            />
+          </div>
 
-        <button className="btn btn-primary btn-block" disabled={loading}>
-          {loading ? 'Logging in…' : 'Log in'}
-        </button>
-      </form>
-    </div>
+          <div className="field">
+            <label><Lock size={14} /> Password</label>
+            <input
+              className="input input-lg"
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="••••••••"
+              autoComplete="current-password"
+              required
+            />
+          </div>
+
+          <button className="btn btn-primary btn-block" disabled={loading}>
+            {loading ? 'Logging in…' : 'Log in'}
+          </button>
+        </form>
+      </div>
+    </>
   )
 }

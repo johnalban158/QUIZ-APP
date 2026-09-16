@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { ArrowLeft, ArrowRight, Send, User } from 'lucide-react'
+import { ArrowLeft, ArrowRight, Check, FileQuestion, Mail, Send, Timer, User } from 'lucide-react'
 import Brand from '../../components/Brand'
 
 export default function TakeQuiz() {
@@ -31,10 +31,59 @@ export default function TakeQuiz() {
     setAnswers((prev) => ({ ...prev, [questionId]: optionId }))
   }
 
-  const questions = quiz?.questions ?? []
-  const q = questions[current]
+  if (error && !quiz) {
+    return (
+      <>
+        <Brand back="/quiz" backLabel="Back to quizzes" />
+        <div className="main">
+          <div className="card empty">
+            <span className="empty-icon"><FileQuestion size={20} /></span>
+            <h3>Quiz unavailable</h3>
+            <p>{error}</p>
+            <button className="btn btn-primary" onClick={() => navigate('/quiz')} style={{ marginTop: 14 }}>
+              Browse quizzes
+            </button>
+          </div>
+        </div>
+      </>
+    )
+  }
+
+  if (!quiz) {
+    return (
+      <>
+        <Brand back="/quiz" backLabel="Back to quizzes" />
+        <div className="loading">
+          <span className="spinner" />
+          Loading…
+        </div>
+      </>
+    )
+  }
+
+  const questions = quiz.questions ?? []
   const total = questions.length
+  const q = questions[current]
   const answeredCount = Object.keys(answers).length
+  const progressPct = total ? Math.round(((current + 1) / total) * 100) : 0
+
+  if (total === 0) {
+    return (
+      <>
+        <Brand back="/quiz" backLabel="Back to quizzes" />
+        <div className="main">
+          <div className="card empty">
+            <span className="empty-icon"><FileQuestion size={20} /></span>
+            <h3>No questions yet</h3>
+            <p>This module doesn't have any questions yet.</p>
+            <button className="btn btn-primary" onClick={() => navigate('/quiz')} style={{ marginTop: 14 }}>
+              Browse quizzes
+            </button>
+          </div>
+        </div>
+      </>
+    )
+  }
 
   const submitQuiz = async () => {
     setSubmitting(true)
@@ -59,39 +108,33 @@ export default function TakeQuiz() {
     }
   }
 
-  if (error && !quiz) return (
-    <>
-      <Brand />
-      <div className="main"><div className="form-error">{error}</div></div>
-    </>
-  )
-
-  if (!quiz) return <div className="loading">Loading…</div>
-
-  const LETTERS = ['A', 'B', 'C', 'D']
-
-  // intro screen
+  // Intro / name entry screen
   if (!started) {
     return (
       <>
-        <Brand right={`${quiz.questions.length} questions`} />
+        <Brand back="/quiz" backLabel="Back to quizzes" right={`${total} questions`} />
         <div className="quiz-shell">
-          <div className="card">
+          <div className="card quiz-intro">
+            <span className="quiz-intro-icon"><FileQuestion size={26} /></span>
+            <p className="eyebrow">Published quiz</p>
             <h1 className="quiz-intro-title">{quiz.title}</h1>
             {quiz.description && <p className="quiz-intro-desc">{quiz.description}</p>}
             <div className="quiz-intro-meta">
-              <span className="badge badge-published">{quiz.questions.length} questions</span>
+              <span className="badge badge-soft"><FileQuestion size={12} /> {total} questions</span>
+              <span className="badge badge-draft"><Timer size={12} /> ~{Math.max(1, Math.round(total * 0.5))} min</span>
             </div>
 
             {error && <div className="form-error">{error}</div>}
 
-            <div className="field">
-              <label><User size={14} /> Your name</label>
-              <input className="input" value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Alice" required />
-            </div>
-            <div className="field">
-              <label>Email (optional)</label>
-              <input className="input" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="alice@example.com" />
+            <div className="quiz-intro-form">
+              <div className="field">
+                <label><User size={14} /> Your name</label>
+                <input className="input input-lg" value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Alice" />
+              </div>
+              <div className="field">
+                <label><Mail size={14} /> Email (optional)</label>
+                <input className="input input-lg" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="alice@example.com" />
+              </div>
             </div>
 
             <button
@@ -99,7 +142,7 @@ export default function TakeQuiz() {
               disabled={!name.trim()}
               onClick={() => setStarted(true)}
             >
-              Start quiz
+              Start quiz <ArrowRight size={16} />
             </button>
           </div>
         </div>
@@ -107,33 +150,58 @@ export default function TakeQuiz() {
     )
   }
 
-  // question screen
+  // Question screen
   return (
     <>
-      <Brand right={`${current + 1} / ${total}`} />
+      <Brand back="/quiz" backLabel="Leave quiz" right={`${current + 1} / ${total}`} />
       <div className="quiz-shell">
-        <div className="progress-track">
-          <div className="progress-fill" style={{ width: `${((current + 1) / total) * 100}%` }} />
+        <div className="quiz-progress-head">
+          <span>Question {current + 1} of {total}</span>
+          <span>{progressPct}% complete</span>
         </div>
-        <p className="quiz-count">Question {current + 1} of {total}</p>
+        <div className="progress-track">
+          <div className="progress-fill" style={{ width: `${progressPct}%` }} />
+        </div>
 
-        <div className="card">
-          <h2 className="quiz-question">{q.text}</h2>
+        <div className="card quiz-qcard">
+          <h2 className="quiz-question">
+            <span className="quiz-qnum">{current + 1}</span>
+            {q.text}
+          </h2>
           <div className="quiz-opts">
-            {q.options.map((opt, i) => (
-              <button
-                key={opt.id}
-                className={`quiz-opt ${answers[q.id] === opt.id ? 'selected' : ''}`}
-                onClick={() => selectOption(q.id, opt.id)}
-              >
-                <span className="letter">{LETTERS[i]}</span>
-                {opt.text}
-              </button>
-            ))}
+            {q.options.map((opt, i) => {
+              const selected = answers[q.id] === opt.id
+              return (
+                <button
+                  key={opt.id}
+                  type="button"
+                  className={`quiz-opt${selected ? ' selected' : ''}`}
+                  onClick={() => selectOption(q.id, opt.id)}
+                >
+                  <span className="letter">{String.fromCharCode(65 + i)}</span>
+                  <span className="opt-text">{opt.text}</span>
+                  <span className="opt-check">{selected && <Check size={13} strokeWidth={3} />}</span>
+                </button>
+              )
+            })}
           </div>
         </div>
 
         {error && <div className="form-error">{error}</div>}
+
+        <div className="dot-nav">
+          {questions.map((qq, i) => (
+            <button
+              key={qq.id}
+              type="button"
+              className={`dot${i === current ? ' current' : ''}${answers[qq.id] ? ' done' : ''}`}
+              onClick={() => setCurrent(i)}
+              aria-label={`Go to question ${i + 1}`}
+              aria-current={i === current ? 'step' : undefined}
+              title={`Question ${i + 1}`}
+            />
+          ))}
+        </div>
 
         <div className="quiz-nav">
           <button
@@ -143,14 +211,13 @@ export default function TakeQuiz() {
           >
             <ArrowLeft size={16} /> Previous
           </button>
-
           {current === total - 1 ? (
             <button
               className="btn btn-primary"
               onClick={submitQuiz}
               disabled={submitting || answeredCount < total}
             >
-              {submitting ? 'Submitting…' : 'Submit'} <Send size={16} />
+              {submitting ? 'Submitting…' : <><span>Submit</span> <Send size={16} /></>}
             </button>
           ) : (
             <button
@@ -158,7 +225,7 @@ export default function TakeQuiz() {
               onClick={() => setCurrent((c) => c + 1)}
               disabled={!answers[q.id]}
             >
-              Next <ArrowRight size={16} />
+              <span>Next</span> <ArrowRight size={16} />
             </button>
           )}
         </div>

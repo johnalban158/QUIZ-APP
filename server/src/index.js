@@ -5,6 +5,7 @@ import authRoutes from './routes/auth.js'
 import moduleRoutes from './routes/modules.js'
 import submissionRoutes from './routes/submissions.js'
 import quizRoutes from './routes/quiz.js'
+import statsRoutes from './routes/stats.js'
 
 const app = express()
 const PORT = process.env.PORT || 4000
@@ -16,6 +17,7 @@ app.get('/api/health', (_req, res) => res.json({ ok: true }))
 app.use('/api/auth', authRoutes)
 app.use('/api/admin/modules', moduleRoutes)
 app.use('/api/admin/submissions', submissionRoutes)
+app.use('/api/admin/stats', statsRoutes)
 app.use('/api/quiz', quizRoutes)
 
 app.use((err, _req, res, _next) => {
