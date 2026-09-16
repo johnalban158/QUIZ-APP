@@ -1,0 +1,212 @@
+:root {
+  --bg: #1b1b3a;
+  --card-bg: #ffffff;
+  --card-text: #1b1b3a;
+  --accent: #f2c14e;
+  --correct: #2ec4b6;
+  --incorrect: #e4572e;
+  --muted: #6b6b8a;
+  --border: #e0e0ec;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--card-text);
+  font-family: system-ui, "Segoe UI", Roboto, sans-serif;
+  min-height: 100vh;
+}
+
+.app {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 1.25rem;
+  color: var(--accent);
+  font-size: 1.5rem;
+  font-weight: 700;
+}
+
+.brand-logo {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 50%;
+  background: var(--accent);
+  color: var(--bg);
+  font-weight: 900;
+}
+
+.main {
+  width: 100%;
+  max-width: 34rem;
+  margin: 0 auto;
+  padding: 1rem 1.25rem 3rem;
+  flex: 1;
+}
+
+.card {
+  background: var(--card-bg);
+  border-radius: 1rem;
+  padding: 1.5rem;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.35);
+}
+
+.question {
+  margin: 0 0 1.25rem;
+  font-size: 1.2rem;
+  line-height: 1.4;
+}
+
+.options {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.option {
+  text-align: left;
+  padding: 0.9rem 1rem;
+  border-radius: 0.75rem;
+  border: 2px solid var(--border);
+  background: transparent;
+  color: inherit;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.1s ease, background 0.15s ease, border-color 0.15s ease;
+}
+
+.option:hover:not(:disabled) {
+  border-color: var(--accent);
+  background: rgba(242, 193, 78, 0.08);
+}
+
+.option:disabled {
+  cursor: default;
+}
+
+.option-correct {
+  border-color: var(--correct) !important;
+  background: var(--correct) !important;
+  color: #ffffff !important;
+}
+
+.option-incorrect {
+  border-color: var(--incorrect) !important;
+  background: var(--incorrect) !important;
+  color: #ffffff !important;
+}
+
+.option-dimmed {
+  opacity: 0.45;
+}
+
+.hint {
+  margin: 1rem 0 0;
+  min-height: 1.4rem;
+  font-weight: 600;
+}
+
+.progress-wrap {
+  margin-bottom: 1.25rem;
+}
+
+.progress-info {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
+  color: var(--accent);
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.progress-track {
+  height: 0.6rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.15);
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: var(--accent);
+  transition: width 0.25s ease;
+}
+
+.primary-btn {
+  display: block;
+  width: 100%;
+  padding: 0.9rem;
+  border: none;
+  border-radius: 0.75rem;
+  background: var(--accent);
+  color: var(--bg);
+  font-size: 1rem;
+  font-weight: 800;
+  cursor: pointer;
+  transition: transform 0.1s ease, filter 0.15s ease;
+}
+
+.primary-btn:hover {
+  filter: brightness(1.08);
+}
+
+.primary-btn:active {
+  transform: scale(0.98);
+}
+
+.next-btn {
+  margin-top: 1.25rem;
+}
+
+.result-card {
+  text-align: center;
+}
+
+.results-title {
+  margin: 0 0 0.75rem;
+  font-size: 1.5rem;
+}
+
+.score {
+  margin: 0;
+  font-size: 1.1rem;
+}
+
+.score-value {
+  color: #2ec4b6;
+  font-weight: 900;
+  font-size: 1.4rem;
+}
+
+.score-percent {
+  margin: 0.5rem 0 1.5rem;
+  color: var(--muted);
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+@media (min-width: 480px) {
+  .main {
+    padding-top: 2.5rem;
+  }
+
+  .card {
+    padding: 2rem;
+  }
+
+  .question {
+    font-size: 1.35rem;
+  }
+}
