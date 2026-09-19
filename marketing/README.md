@@ -10,7 +10,7 @@ no package.json. It lives inside the repo so it deploys straight from GitHub on
 | `index.html` | Page structure & copy (hero, features, install…)   |
 | `style.css`  | Design system, animations, responsive layout       |
 | `script.js`  | Reveal-on-scroll, stat counters, install dialog    |
-| `render.yaml`| Optional Render Blueprint (Infrastructure as Code) |
+| `render.yaml`| Render Blueprint lives at the repo **root** (not here) |
 
 ---
 
@@ -29,12 +29,15 @@ no package.json. It lives inside the repo so it deploys straight from GitHub on
 > That's it — no config files required for this flow. The free plan is fine;
 > Re-renders on every push to `main` by default.
 
-## Deploy via Render Blueprint (optional)
+## Deploy via Render Blueprint (zero-config, no form to fill)
 
-If you prefer Infrastructure-as-Code, `render.yaml` in this folder defines the
-same static site (`runtime: static`, `staticPublishPath: ./marketing`). Use the
-dashboard **New → Blueprint** flow and point it at this repo; it creates the
-service from the file.
+There is a `render.yaml` at the repo **root** that defines everything — no
+settings to type. Flow:
+
+1. [Render Dashboard](https://dashboard.render.com) → **New → Blueprint**.
+2. Pick the `QUIZ-APP` repo.
+3. Click **Apply**. Render reads `render.yaml` and creates the static site
+   automatically. That's it.
 
 ## Verifying locally
 

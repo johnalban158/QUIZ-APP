@@ -1,0 +1,14 @@
+# Render Blueprint — deploys the marketing/ landing page as a static site.
+# Used by the Render dashboard flow: New -> Blueprint -> connect this repo.
+# This file MUST live at the repo root for Render to find it.
+#
+# The service reads everything from marketing/ (pure HTML/CSS/JS, no build).
+services:
+  - type: web
+    name: quiz-app-marketing
+    runtime: static
+    rootDir: marketing
+    buildCommand: echo "No build step needed — pure HTML/CSS/JS"
+    staticPublishPath: ./
+    previews:
+      generation: automatic
