@@ -394,26 +394,36 @@
       </button>
       <span class="eyebrow">Android install</span>
       <h2 id="modal-title">Install the Quiz App APK</h2>
+      <a
+        class="btn btn-primary btn-lg"
+        href="https://cdn.jsdelivr.net/gh/johnalban158/QUIZ-APP@main/apk/quizapp-debug.apk"
+        rel="noopener noreferrer"
+      >
+        <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Download APK for Android
+      </a>
       <ol class="modal-steps">
-        <li>With the backend <strong>running on your computer</strong>, open the URL below in the phone's browser.</li>
-        <li>Tap the <em>Download quizapp-debug.apk</em> link on the install page.</li>
+        <li>Tap the button above — the download starts from the public GitHub copy.</li>
         <li>When prompted, allow <em>Install from unknown sources</em>. You're done.</li>
       </ol>
-      <div class="lan-row">
-        <input id="lan-url" type="text" value="http://localhost:4000/" aria-label="Backend URL" spellcheck="false" autocomplete="off" />
-        <button class="btn btn-ghost btn-sm" type="button" data-action="open-lan" aria-label="Open the install page">
-          <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
-          Open
-        </button>
-        <button class="btn btn-primary btn-sm" type="button" data-action="copy-lan" aria-label="Copy the install URL">
-          <span data-copy-label="Copy">Copy</span>
-        </button>
-      </div>
-      <p class="install-hint">
-        Same Wi-Fi? Replace <code>localhost</code> with your computer's LAN IP
-        (e.g. <code>http://192.168.1.50:4000/</code>). The server's root page is the
-        install page; <code>/app.apk</code> redirects straight to the APK.
-      </p>
+      <details class="lan-row-wrap">
+        <summary>Hosting it yourself on a LAN? Expand for the local flow</summary>
+        <div class="lan-row">
+          <input id="lan-url" type="text" value="http://localhost:4000/" aria-label="Backend URL" spellcheck="false" autocomplete="off" />
+          <button class="btn btn-ghost btn-sm" type="button" data-action="open-lan" aria-label="Open the install page">
+            <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+            Open
+          </button>
+          <button class="btn btn-ghost btn-sm" type="button" data-action="copy-lan" aria-label="Copy the install URL">
+            <span data-copy-label="Copy">Copy</span>
+          </button>
+        </div>
+        <p class="install-hint">
+          Same Wi-Fi? Replace <code>localhost</code> with your computer's LAN IP
+          (e.g. <code>http://192.168.1.50:4000/</code>). The server's root page is the
+          install page; <code>/app.apk</code> redirects straight to the APK.
+        </p>
+      </details>
     </div>
   </div>
 
