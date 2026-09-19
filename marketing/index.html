@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Quiz App — Learn, publish, and track in one place</title>
+  <meta name="description" content="An open-source, full-stack quiz and training platform. Build modules, publish quizzes, assign them to staff, and track every result — on web, Android, and desktop." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+
+  <!-- Header -->
+  <header class="site-header" id="top">
+    <div class="container nav">
+      <a class="brand" href="#top" aria-label="Quiz App home">
+        <span class="brand-mark" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg>
+        </span>
+        <span class="brand-name">Quiz App</span>
+      </a>
+      <nav class="nav-links" aria-label="Primary">
+        <a href="#features">Features</a>
+        <a href="#how">How it works</a>
+        <a href="#stack">Tech</a>
+        <a href="#quotes">Adoption</a>
+      </nav>
+      <a class="btn btn-ghost btn-sm github-top" href="https://github.com/johnalban158/QUIZ-APP" target="_blank" rel="noopener noreferrer">
+        <svg class="ic" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2C6.48 2 2 6.58 2 12.25c0 4.5 2.87 8.32 6.84 9.67.5.09.68-.22.68-.49v-1.7c-2.78.62-3.37-1.37-3.37-1.37-.45-1.18-1.11-1.5-1.11-1.5-.91-.63.07-.62.07-.62 1 .07 1.53 1.06 1.53 1.06.9 1.57 2.35 1.12 2.92.85.09-.66.35-1.11.63-1.37-2.22-.26-4.55-1.14-4.55-5.04 0-1.11.39-2.02 1.03-2.74-.1-.26-.45-1.3.1-2.7 0 0 .84-.28 2.75 1.05a9.4 9.4 0 0 1 5 0c1.91-1.33 2.75-1.05 2.75-1.05.55 1.4.2 2.44.1 2.7.64.72 1.03 1.63 1.03 2.74 0 3.91-2.34 4.77-4.57 5.02.36.32.68.94.68 1.9v2.8c0 .27.17.59.69.49A10.27 10.27 0 0 0 22 12.25C22 6.58 17.52 2 12 2z"/></svg>
+        GitHub
+      </a>
+    </div>
+  </header>
+
+  <main id="main">
+    <!-- Hero -->
+    <section class="hero">
+      <div class="grad-glow" aria-hidden="true"></div>
+      <div class="container hero-grid">
+        <div class="hero-copy reveal">
+          <span class="eyebrow hero-badge">
+            <span class="pulse" aria-hidden="true"></span>
+            Open source &middot; Self-hosted &middot; 4 platforms
+          </span>
+          <h1>Know what <span class="grad-text">you know.</span></h1>
+          <p class="lead">
+            A full-stack quiz and training platform for teams. Build modules,
+            publish quizzes, assign them to staff, and track every answer —
+            in a clean, focused flow your people will actually enjoy.
+          </p>
+          <div class="hero-actions">
+            <a class="btn btn-primary btn-lg" href="#install">
+              <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              Get the app
+            </a>
+            <a class="btn btn-ghost btn-lg" href="https://github.com/johnalban158/QUIZ-APP" target="_blank" rel="noopener noreferrer">
+              <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18h6M10 22h4M12 2a7 7 0 0 0-4 12.7c.6.4 1 1.1 1 1.8V17h6v-.5c0-.7.4-1.4 1-1.8A7 7 0 0 0 12 2z"/></svg>
+              View source on GitHub
+            </a>
+          </div>
+          <ul class="hero-chips" aria-label="Highlights">
+            <li>No login for takers</li>
+            <li>JWT-secured admin</li>
+            <li>PostgreSQL-backed</li>
+            <li>Instant grading</li>
+          </ul>
+        </div>
+
+        <!-- CSS-drawn app mock -->
+        <div class="hero-visual reveal" aria-hidden="true">
+          <div class="mock">
+            <div class="mock-bar">
+              <span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
+              <span class="mock-url">quizapp.local / science-basics</span>
+            </div>
+            <div class="mock-head">
+              <div>
+                <span class="mock-eyebrow">Science Basics</span>
+                <div class="mock-title">Which planet is known as the Red Planet?</div>
+              </div>
+              <span class="mock-chip">3 / 10</span>
+            </div>
+            <div class="progress-track"><div class="progress-fill" style="width: 30%"></div></div>
+            <div class="mock-opts">
+              <div class="mock-opt"><span class="letter">A</span> Venus</div>
+              <div class="mock-opt selected"><span class="letter">B</span> Mars <span class="tick">&#10003;</span></div>
+              <div class="mock-opt"><span class="letter">C</span> Jupiter</div>
+              <div class="mock-opt"><span class="letter">D</span> Saturn</div>
+            </div>
+            <div class="mock-foot">
+              <span class="mock-hint">3/3 answered</span>
+              <span class="mock-submit">Submit</span>
+            </div>
+          </div>
+          <div class="float-chip float-a">
+            <span class="ring" aria-hidden="true"><span>100%</span></span>
+            <span class="float-text">Scored 3/3<br /><small>graded instantly</small></span>
+          </div>
+          <div class="float-chip float-b">
+            <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>
+            <span class="float-text"><strong>Completion recorded</strong><br /><small>for your staff member</small></span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Tech marquee -->
+    <section class="marquee" aria-label="Powered by">
+      <div class="marquee-track">
+        <div class="marquee-group">
+          <span>React 19</span><span>Vite 8</span><span>Express 5</span><span>Node 20+</span><span>PostgreSQL 16</span><span>Prisma 6</span><span>JWT</span><span>bcrypt</span><span>Capacitor 7</span><span>Tauri 2</span><span>Tailwind CSS 4</span>
+        </div>
+        <div class="marquee-group">
+          <span>React 19</span><span>Vite 8</span><span>Express 5</span><span>Node 20+</span><span>PostgreSQL 16</span><span>Prisma 6</span><span>JWT</span><span>bcrypt</span><span>Capacitor 7</span><span>Tauri 2</span><span>Tailwind CSS 4</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Features -->
+    <section class="section" id="features">
+      <div class="container">
+        <div class="sec-head reveal">
+          <span class="eyebrow">Features</span>
+          <h2>Everything a quiz platform needs — nothing it doesn't.</h2>
+          <p class="sec-sub">
+            Real features from the actual app: an admin content library, a staff
+            roster with training plans, and a no-friction taker flow.
+          </p>
+        </div>
+        <div class="feat-grid">
+          <article class="feat-card reveal">
+            <span class="feat-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+            </span>
+            <h3>Content library</h3>
+            <p>Create, edit, and delete training modules with titles, descriptions, and reading content — then attach a PDF, DOCX, or TXT source (up to 10&nbsp;MB) the quiz is based on.</p>
+          </article>
+          <article class="feat-card reveal">
+            <span class="feat-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+            </span>
+            <h3>Question builder</h3>
+            <p>Add questions with four options, mark the single correct answer, then reorder them with one-click up/down controls. Every change is saved against the API instantly.</p>
+          </article>
+          <article class="feat-card reveal">
+            <span class="feat-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m10 13-2 2 2 2"/><path d="M14 13l2 2-2 2"/><path d="M17 21H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2z"/></svg>
+            </span>
+            <h3>Publish &amp; draft</h3>
+            <p>Flip any module between <em>Draft</em> and <em>Published</em>. Takers only ever see published modules — polish privately, ship when you're ready.</p>
+          </article>
+          <article class="feat-card reveal">
+            <span class="feat-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 7h-9"/><path d="M14 17H5"/><circle cx="17" cy="17" r="3"/><circle cx="7" cy="7" r="3"/></svg>
+            </span>
+            <h3>Eligibility rules</h3>
+            <p>Restrict a module by care specialty — Home Health Aide, Personal Care Aide, or Companion &amp; Respite Aide — so the right people get the right training.</p>
+          </article>
+          <article class="feat-card reveal">
+            <span class="feat-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            </span>
+            <h3>No-login taker flow</h3>
+            <p>Takers never need an account. Enter a name, pick the assisting staff member, and start a published quiz in seconds — great for senior-assisted sessions.</p>
+          </article>
+          <article class="feat-card reveal">
+            <span class="feat-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+            </span>
+            <h3>Instant grading</h3>
+            <p>One question at a time with a live progress bar. Results are graded the moment you submit — score, percent, pass/fail at a 70% line, plus a per-question breakdown that reveals the correct answer.</p>
+          </article>
+          <article class="feat-card reveal">
+            <span class="feat-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="8" y1="15" x2="14" y2="15"/></svg>
+            </span>
+            <h3>Submissions inbox</h3>
+            <p>Every attempt is saved. Filter by module, sort by date or score, and drill into a full per-question review of any submission — with what they picked and what was correct.</p>
+          </article>
+          <article class="feat-card reveal">
+            <span class="feat-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+            </span>
+            <h3>Staff roster &amp; training plans</h3>
+            <p>Manage staff accounts with specialties, assign modules one at a time or in bulk, and watch completion percentages climb as staff pass their assigned training.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- How it works -->
+    <section class="section section-alt" id="how">
+      <div class="container">
+        <div class="sec-head reveal">
+          <span class="eyebrow">How it works</span>
+          <h2>From first draft to completed training — in four steps.</h2>
+        </div>
+        <ol class="steps">
+          <li class="step reveal">
+            <span class="step-num">1</span>
+            <h3>Build</h3>
+            <p>Admins create a module: reading content, eligibility rules, and questions with the correct answers marked.</p>
+          </li>
+          <li class="step reveal">
+            <span class="step-num">2</span>
+            <h3>Publish &amp; assign</h3>
+            <p>Flip the module to <em>Published</em>, then assign it to one staff member — or a whole roster in a single bulk assignment.</p>
+          </li>
+          <li class="step reveal">
+            <span class="step-num">3</span>
+            <h3>Take</h3>
+            <p>Takers answer one question at a time, assisted by a named staff member. No account, no friction.</p>
+          </li>
+          <li class="step reveal">
+            <span class="step-num">4</span>
+            <h3>Prove</h3>
+            <p>Pass at 70% and a completion is recorded to the staff member's training plan. Admins review every answer.</p>
+          </li>
+        </ol>
+      </div>
+    </section>
+
+    <!-- Stats band -->
+    <section class="stats-band" aria-label="Platform highlights">
+      <div class="container stats-grid">
+        <div class="stat reveal">
+          <div class="stat-num" data-target="4">0</div>
+          <div class="stat-label">Platforms — web, Android, desktop + REST API</div>
+        </div>
+        <div class="stat reveal">
+          <div class="stat-num" data-target="70">0</div>
+          <div class="stat-label">Pass line for a recorded completion</div>
+        </div>
+        <div class="stat reveal">
+          <div class="stat-num" data-target="3">0</div>
+          <div class="stat-label">Care specialty tracks</div>
+        </div>
+        <div class="stat reveal">
+          <div class="stat-num" data-target="7">0</div>
+          <div class="stat-label">Day JWT session, refreshed on login</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Tech stack -->
+    <section class="section" id="stack">
+      <div class="container">
+        <div class="sec-head reveal">
+          <span class="eyebrow">Under the hood</span>
+          <h2>A modern stack, open for you to extend.</h2>
+          <p class="sec-sub">No proprietary lock-in. The whole thing is a GitHub repo you can fork, deploy, and tweak.</p>
+        </div>
+        <ul class="stack-chips reveal">
+          <li><strong>React 19</strong><span>UI</span></li>
+          <li><strong>Vite 8</strong><span>bundler</span></li>
+          <li><strong>React Router</strong><span>routing</span></li>
+          <li><strong>Express 5</strong><span>REST API</span></li>
+          <li><strong>Node 20+</strong><span>runtime</span></li>
+          <li><strong>PostgreSQL 16</strong><span>database</span></li>
+          <li><strong>Prisma 6</strong><span>ORM</span></li>
+          <li><strong>JWT + bcrypt</strong><span>auth</span></li>
+          <li><strong>Capacitor 7</strong><span>Android APK</span></li>
+          <li><strong>Tauri 2</strong><span>desktop shell</span></li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- Testimonials -->
+    <section class="section section-alt" id="quotes">
+      <div class="container">
+        <div class="sec-head reveal">
+          <span class="eyebrow">Adoption</span>
+          <h2>Praised by the people running training.</h2>
+        </div>
+        <div class="quote-grid">
+          <figure class="quote-card reveal">
+            <div class="quote-stars" aria-label="5 out of 5 stars">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
+            <blockquote>&ldquo;We onboard new aides every week. The no-login taker flow means our residents can be quizzed without fighting accounts — the results land in the admin inbox instantly.&rdquo;</blockquote>
+            <figcaption>
+              <span class="avatar" style="--av:#7c6cff">DR</span>
+              <span class="who"><strong>Dana Reyes</strong><small>Training Lead, BrightCare Home Health</small></span>
+            </figcaption>
+          </figure>
+          <figure class="quote-card reveal">
+            <div class="quote-stars" aria-label="5 out of 5 stars">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
+            <blockquote>&ldquo;Bulk assignment is the killer feature. I push a published module to forty staff in one click and just watch the completion percentage climb.&rdquo;</blockquote>
+            <figcaption>
+              <span class="avatar" style="--av:#22d3ee">MO</span>
+              <span class="who"><strong>Marcus Okafor</strong><small>Operations Manager, CompanionCare Network</small></span>
+            </figcaption>
+          </figure>
+          <figure class="quote-card reveal">
+            <div class="quote-stars" aria-label="5 out of 5 stars">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
+            <blockquote>&ldquo;The per-question breakdown changed how we coach. We can see exactly which topic deserves the next review session — no more guessing.&rdquo;</blockquote>
+            <figcaption>
+              <span class="avatar" style="--av:#34d399">EC</span>
+              <span class="who"><strong>Elena Cruz</strong><small>PCA Program Coordinator</small></span>
+            </figcaption>
+          </figure>
+        </div>
+        <p class="quote-note reveal"><em>Illustrative quotes shared for demo purposes.</em></p>
+      </div>
+    </section>
+
+    <!-- Install / Get the app -->
+    <section class="section" id="install">
+      <div class="container">
+        <div class="install-panel reveal">
+          <div class="grad-glow inside" aria-hidden="true"></div>
+          <div class="install-copy">
+            <span class="eyebrow">Get the app</span>
+            <h2>Put Quiz App on every device — or run it yourself.</h2>
+            <p class="lead">
+              The frontend lives on the web, ships as an Android APK (debug build), and packs
+              into a desktop app. The code is yours, so deploy it however you like.
+            </p>
+            <div class="install-actions">
+              <button class="btn btn-primary btn-lg" type="button" data-action="open-install">
+                <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="7 17 12 22 17 17"/><polyline points="7 7 12 2 17 7"/><polygon points="12 2 15 6 12 10 9 6 12 2" /><polygon points="12 10 15 14 12 18 9 14 12 10"/></svg>
+                Download Android APK
+              </button>
+              <a class="btn btn-ghost btn-lg" href="https://github.com/johnalban158/QUIZ-APP" target="_blank" rel="noopener noreferrer">
+                <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><line x1="20" y1="4" x2="8.12" y2="15.88"/><line x1="14.47" y1="14.48" x2="20" y2="20"/><line x1="8.12" y1="8.12" x2="12" y2="12"/></svg>
+                View Source on GitHub
+              </a>
+            </div>
+            <p class="install-note">
+              The APK is a <strong>debug build</strong> — your phone will ask you to allow
+              <em>Install from unknown sources</em>. On the same Wi-Fi, tap the install page's
+              download link and you're in.
+            </p>
+          </div>
+
+          <div class="prereq-card">
+            <div class="prereq-head">
+              <span class="feat-icon small">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 17 16.17 4.83a2.83 2.83 0 0 1 4 4L7 21l-4 1 1-4Z"/></svg>
+              </span>
+              <h3>Want it live? One command.</h3>
+            </div>
+            <p class="prereq-text">
+              This page is the storefront — the app itself is a full stack
+              (Express API + PostgreSQL). Spin it up locally and everything lights up:
+            </p>
+            <div class="code-row">
+              <code>npm run dev</code>
+              <button class="copy-btn" type="button" data-copy="npm run dev" aria-label="Copy command">
+                <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                <span class="copy-label">Copy</span>
+              </button>
+            </div>
+            <p class="prereq-foot">
+              The API serves on <code>:4000</code>, the app on <code>:5173</code>. See the
+              repo README for the PostgreSQL setup — <code>db:push</code> + <code>db:seed</code>
+              give you demo data in minutes.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Footer -->
+  <footer class="site-footer">
+    <div class="container footer-inner">
+      <div class="footer-brand">
+        <a class="brand" href="#top">
+          <span class="brand-mark" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg>
+          </span>
+          <span class="brand-name">Quiz App</span>
+        </a>
+        <p>Learn &middot; Publish &middot; Track — KAN A NI PLEASE</p>
+      </div>
+      <nav class="footer-links" aria-label="Footer">
+        <a href="#features">Features</a>
+        <a href="#how">How it works</a>
+        <a href="#stack">Tech stack</a>
+        <a href="#install">Get the app</a>
+        <a href="https://github.com/johnalban158/QUIZ-APP" target="_blank" rel="noopener noreferrer">GitHub</a>
+      </nav>
+      <p class="footer-meta">Built with React + Express &middot; PostgreSQL &middot; rel. <span id="year">2026</span></p>
+    </div>
+  </footer>
+
+  <!-- Install modal -->
+  <div class="modal-backdrop" id="install-modal" hidden>
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+      <button class="modal-close" type="button" data-action="close-install" aria-label="Close dialog">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+      <span class="eyebrow">Android install</span>
+      <h2 id="modal-title">Install the Quiz App APK</h2>
+      <ol class="modal-steps">
+        <li>With the backend <strong>running on your computer</strong>, open the URL below in the phone's browser.</li>
+        <li>Tap the <em>Download quizapp-debug.apk</em> link on the install page.</li>
+        <li>When prompted, allow <em>Install from unknown sources</em>. You're done.</li>
+      </ol>
+      <div class="lan-row">
+        <input id="lan-url" type="text" value="http://localhost:4000/" aria-label="Backend URL" spellcheck="false" autocomplete="off" />
+        <button class="btn btn-ghost btn-sm" type="button" data-action="open-lan" aria-label="Open the install page">
+          <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+          Open
+        </button>
+        <button class="btn btn-primary btn-sm" type="button" data-action="copy-lan" aria-label="Copy the install URL">
+          <span data-copy-label="Copy">Copy</span>
+        </button>
+      </div>
+      <p class="install-hint">
+        Same Wi-Fi? Replace <code>localhost</code> with your computer's LAN IP
+        (e.g. <code>http://192.168.1.50:4000/</code>). The server's root page is the
+        install page; <code>/app.apk</code> redirects straight to the APK.
+      </p>
+    </div>
+  </div>
+
+  <noscript>
+    <div class="noscript">This landing page needs JavaScript for its animations and install dialog — but all links still work without it.</div>
+  </noscript>
+
+  <script src="script.js" defer></script>
+</body>
+</html>
