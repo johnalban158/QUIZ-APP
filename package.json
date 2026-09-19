@@ -8,6 +8,8 @@
     "dev:server": "npm --prefix server run dev",
     "dev:web": "vite",
     "build": "tsc -b && vite build",
+    "build:mobile": "vite build",
+    "cap:sync": "cap sync android",
     "lint": "oxlint",
     "preview": "vite preview",
     "tauri": "tauri",
@@ -15,6 +17,9 @@
     "tauri:build": "tauri build"
   },
   "dependencies": {
+    "@capacitor/android": "^7.6.9",
+    "@capacitor/cli": "^7.6.9",
+    "@capacitor/core": "^7.6.9",
     "@tailwindcss/vite": "^4.3.3",
     "lucide-react": "^1.46.0",
     "react": "^19.2.8",

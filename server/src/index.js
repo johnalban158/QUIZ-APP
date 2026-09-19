@@ -22,6 +22,18 @@ app.use(express.json())
 // Serve uploaded files
 app.use('/uploads', express.static(path.join(__dirname, '..', 'uploads')))
 
+app.get('/app.apk', (_req, res) => res.redirect('/uploads/quizapp-debug.apk'))
+app.get('/', (_req, res) => {
+  res.type('html').send(`<html><head><meta charset="utf-8"></head><body style="font-family:system-ui,'Segoe UI',Arial;padding:2rem;background:#f4f4f6;color:#222">
+  <h2>Quiz App - Android build</h2>
+  <p>Install on an Android phone:</p>
+  <ol><li>Open the download link below in the phone's browser.</li>
+  <li>After it downloads, tap the file and allow <b>Install from unknown sources</b> when prompted.</li></ol>
+  <p><a href="/uploads/quizapp-debug.apk" download>Download quizapp-debug.apk</a></p>
+  <hr><p>Shortcut: <a href="/app.apk">/app.apk</a> redirects to the same file.</p>
+  </body></html>`)
+})
+
 app.get('/api/health', (_req, res) => res.json({ ok: true }))
 app.use('/api/auth', authRoutes)
 app.use('/api/admin/modules', moduleRoutes)
