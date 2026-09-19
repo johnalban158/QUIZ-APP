@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { CheckCircle2, ChevronRight, Search, UserPlus, Users, X } from 'lucide-react'
 import { api } from '../../api'
-import { SPECIALTIES, US_STATES, specialtyLabel } from '../../lib'
+import { SPECIALTIES, specialtyLabel } from '../../lib'
 
 const LIMIT = 10
 
@@ -24,14 +24,13 @@ export default function Staff() {
   const [page, setPage] = useState(1)
   const [search, setSearch] = useState('')
   const [specialty, setSpecialty] = useState('')
-  const [state, setState] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const [selected, setSelected] = useState(new Set())
 
   // Add staff modal
   const [showAdd, setShowAdd] = useState(false)
-  const [form, setForm] = useState({ name: '', email: '', password: '', specialty: SPECIALTIES[0].value, state: '' })
+  const [form, setForm] = useState({ name: '', email: '', password: '', specialty: SPECIALTIES[0].value })
   const [addBusy, setAddBusy] = useState(false)
   const [addError, setAddError] = useState('')
 
@@ -43,14 +42,13 @@ export default function Staff() {
   const [assignError, setAssignError] = useState('')
   const [assignResult, setAssignResult] = useState(null)
 
-  const load = async (p = page, q = search, sp = specialty, st = state) => {
+  const load = async (p = page, q = search, sp = specialty) => {
     setLoading(true)
     setError('')
     try {
       const params = new URLSearchParams({ page: String(p), limit: String(LIMIT) })
       if (q.trim()) params.set('search', q.trim())
       if (sp) params.set('specialty', sp)
-      if (st) params.set('state', st)
       const res = await api(`/admin/staff?${params}`)
       setRows(Array.isArray(res) ? res : (res.data ?? []))
       setMeta(res.meta ?? { total: Array.isArray(res) ? res.length : 0, page: p, limit: LIMIT })
@@ -63,9 +61,9 @@ export default function Staff() {
   }
 
   useEffect(() => {
-    const t = setTimeout(() => load(page, search, specialty, state), 200)
+    const t = setTimeout(() => load(page, search, specialty), 200)
     return () => clearTimeout(t)
-  }, [page, search, specialty, state])
+  }, [page, search, specialty])
 
   const toggleSelect = (id) => {
     setSelected((prev) => {
@@ -94,10 +92,10 @@ export default function Staff() {
     try {
       await api('/auth/staff/register', { method: 'POST', body: form })
       setShowAdd(false)
-      setForm({ name: '', email: '', password: '', specialty: SPECIALTIES[0].value, state: '' })
+      setForm({ name: '', email: '', password: '', specialty: SPECIALTIES[0].value })
       setSelected(new Set())
       setPage(1)
-      load(1, search, specialty, state)
+      load(1, search, specialty)
     } catch (err) {
       setAddError(err.message || 'Failed to add staff member')
     } finally {
@@ -133,7 +131,7 @@ export default function Staff() {
       })
       setAssignResult(res)
       setSelected(new Set())
-      load(page, search, specialty, state)
+      load(page, search, specialty)
     } catch (err) {
       setAssignError(err.message || 'Failed to assign module')
     } finally {
@@ -158,7 +156,7 @@ export default function Staff() {
         <div>
           <p className="eyebrow">Staff roster</p>
           <h1>Staff</h1>
-          <p className="page-sub">Manage care aides and assign training modules by specialty × state eligibility.</p>
+          <p className="page-sub">Manage care aides and assign training modules by specialty eligibility.</p>
         </div>
         <div className="mod-header-actions">
           {selected.size >= 1 && (
@@ -189,15 +187,6 @@ export default function Staff() {
             <option value="">All specialties</option>
             {SPECIALTIES.map((s) => (
               <option key={s.value} value={s.value}>{s.label}</option>
-            ))}
-          </select>
-        </div>
-        <div className="field">
-          <label>State</label>
-          <select className="select" value={state} onChange={(e) => { setState(e.target.value); setPage(1) }}>
-            <option value="">All states</option>
-            {US_STATES.map((s) => (
-              <option key={s} value={s}>{s}</option>
             ))}
           </select>
         </div>
@@ -246,7 +235,6 @@ export default function Staff() {
                   </th>
                   <th>Name</th>
                   <th>Specialty</th>
-                  <th>State</th>
                   <th>Training progress</th>
                   <th></th>
                 </tr>
@@ -273,7 +261,6 @@ export default function Staff() {
                       </div>
                     </td>
                     <td>{specialtyLabel(s.specialty)}</td>
-                    <td>{s.state ? <span className="badge badge-state">{s.state}</span> : <span className="muted">—</span>}</td>
                     <td>
                       <div className="progress-mini">
                         <div className="progress-mini-fill" style={{ width: `${s.progressPercent ?? 0}%` }} />
@@ -341,15 +328,6 @@ export default function Staff() {
                     ))}
                   </select>
                 </div>
-                <div className="field">
-                  <label>State</label>
-                  <select className="select" value={form.state} onChange={(e) => setForm({ ...form, state: e.target.value })} required>
-                    <option value="" disabled>Select state…</option>
-                    {US_STATES.map((s) => (
-                      <option key={s} value={s}>{s}</option>
-                    ))}
-                  </select>
-                </div>
               </div>
               <div className="modal-actions">
                 <button type="button" className="btn btn-ghost" onClick={() => setShowAdd(false)}>Cancel</button>
@@ -412,7 +390,7 @@ export default function Staff() {
               <div className="empty">
                 <span className="empty-icon"><Users size={20} /></span>
                 <h3>No eligible modules</h3>
-                <p>No published modules are currently eligible for all of the selected staff's specialty × state.</p>
+                <p>No published modules are currently eligible for all of the selected staff's specialty.</p>
               </div>
             ) : (
               <>

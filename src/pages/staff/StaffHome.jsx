@@ -47,7 +47,7 @@ export default function StaffHome() {
         <span className="section-head-icon"><GraduationCap size={18} /></span>
         <div>
           <h1>My training plan</h1>
-          <p className="page-sub">{specialtyLabel(plan.specialty)}{plan.state ? ` · ${plan.state}` : ''}</p>
+          <p className="page-sub">{specialtyLabel(plan.specialty)}</p>
         </div>
       </div>
 
@@ -58,7 +58,7 @@ export default function StaffHome() {
         <div className="plan-summary-main">
           <div className="plan-title">Modules complete</div>
           <div className="muted" style={{ fontSize: '0.9rem' }}>
-            {plan.assignedModules ?? 0} assigned · {plan.totalEligibleModules ?? 0} eligible for your specialty × state
+            {plan.assignedModules ?? 0} assigned · {plan.totalEligibleModules ?? 0} eligible for your specialty
           </div>
           <div className="progress-track">
             <div className="progress-fill" style={{ width: `${plan.progressPercent ?? 0}%` }} />
@@ -80,7 +80,7 @@ export default function StaffHome() {
         <div className="card empty">
           <span className="empty-icon"><BookOpen size={20} /></span>
           <h3>No training assigned yet</h3>
-          <p>Your administrator will assign modules that fit your specialty and state.</p>
+          <p>Your administrator will assign modules that fit your specialty.</p>
         </div>
       ) : (
         <div className="mod-list">

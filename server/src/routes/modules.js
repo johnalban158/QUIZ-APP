@@ -19,7 +19,7 @@ const withQuestions = {
     orderBy: { orderIndex: 'asc' },
     include: { options: { orderBy: { id: 'asc' } } },
   },
-  eligibility: { select: { specialty: true, state: true } },
+  eligibility: { select: { specialty: true } },
   _count: { select: { submissions: true, questions: true } },
 }
 
@@ -141,15 +141,13 @@ router.get('/eligible', async (req, res) => {
 
   const staff = await prisma.user.findMany({
     where: { id: { in: staffIds }, role: 'STAFF' },
-    select: { id: true, specialty: true, state: true },
+    select: { id: true, specialty: true },
   })
   if (staff.length === 0) return res.json([])
 
-  // Build OR conditions: (specialty=X AND state=Y) OR (specialty=X AND state='')
-  const orConditions = staff.flatMap(s => [
-    { specialty: s.specialty, state: s.state },
-    { specialty: s.specialty, state: '' },
-  ])
+  // Build OR conditions on specialty only
+  const specialties = [...new Set(staff.map(s => s.specialty).filter(Boolean))]
+  const orConditions = specialties.map(specialty => ({ specialty }))
 
   const eligibleModuleIds = await prisma.moduleEligibility.findMany({
     where: { OR: orConditions },

@@ -34,7 +34,7 @@ export function requireStaff(req, res, next) {
 
 export function signToken(user) {
   return jwt.sign(
-    { id: user.id, name: user.name, email: user.email, role: user.role, specialty: user.specialty, state: user.state },
+    { id: user.id, name: user.name, email: user.email, role: user.role, specialty: user.specialty },
     process.env.JWT_SECRET,
     { expiresIn: '7d' }
   )

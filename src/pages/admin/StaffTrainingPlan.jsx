@@ -107,7 +107,6 @@ export default function StaffTrainingPlan() {
                 <p className="page-sub">{plan.email}</p>
                 <div className="head-chips">
                   <span className="badge badge-soft">{specialtyLabel(plan.specialty)}</span>
-                  {plan.state ? <span className="badge badge-state">{plan.state}</span> : null}
                 </div>
               </div>
             </div>
@@ -120,7 +119,7 @@ export default function StaffTrainingPlan() {
                 <div className="progress-fill" style={{ width: `${plan.progressPercent ?? 0}%` }} />
               </div>
               <p className="muted" style={{ marginTop: 10, fontSize: '0.85rem' }}>
-                {plan.assignedModules ?? 0} assigned · {plan.totalEligibleModules ?? 0} eligible for specialty × state
+                {plan.assignedModules ?? 0} assigned · {plan.totalEligibleModules ?? 0} eligible for this specialty
               </p>
             </div>
             <button className="btn btn-primary" onClick={openAssign}>
@@ -169,7 +168,6 @@ export default function StaffTrainingPlan() {
                         {eligMap[a.moduleId].map((rule, i) => (
                           <span key={i} className="badge badge-soft">
                             {specialtyLabel(rule.specialty)}
-                            {rule.state ? ` · ${rule.state}` : ' · all states'}
                           </span>
                         ))}
                       </div>

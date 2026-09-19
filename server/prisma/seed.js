@@ -25,11 +25,11 @@ const COMPANION_CARE_CONTENT = [
 ].join(' ')
 
 const STAFF_SEED = [
-  { name: 'Maria Santos', email: 'maria.santos@quizapp.com', specialty: 'HOME_HEALTH_AIDE', state: 'NJ' },
-  { name: 'James Rivera', email: 'james.rivera@quizapp.com', specialty: 'PERSONAL_CARE_AIDE', state: 'PA' },
-  { name: 'Elena Cruz', email: 'elena.cruz@quizapp.com', specialty: 'COMPANION_RESPITE_AIDE', state: 'NJ' },
-  { name: 'David Kim', email: 'david.kim@quizapp.com', specialty: 'HOME_HEALTH_AIDE', state: 'PA' },
-  { name: 'Aisha Johnson', email: 'aisha.johnson@quizapp.com', specialty: 'PERSONAL_CARE_AIDE', state: 'NJ' },
+  { name: 'Maria Santos', email: 'maria.santos@quizapp.com', specialty: 'HOME_HEALTH_AIDE' },
+  { name: 'James Rivera', email: 'james.rivera@quizapp.com', specialty: 'PERSONAL_CARE_AIDE' },
+  { name: 'Elena Cruz', email: 'elena.cruz@quizapp.com', specialty: 'COMPANION_RESPITE_AIDE' },
+  { name: 'David Kim', email: 'david.kim@quizapp.com', specialty: 'HOME_HEALTH_AIDE' },
+  { name: 'Aisha Johnson', email: 'aisha.johnson@quizapp.com', specialty: 'PERSONAL_CARE_AIDE' },
 ]
 
 async function ensureModule({ title, description, content, status, createdById, questions }) {
@@ -57,11 +57,11 @@ async function ensureModule({ title, description, content, status, createdById, 
   return mod
 }
 
-async function ensureEligibility(moduleId, specialty, state) {
+async function ensureEligibility(moduleId, specialty) {
   await prisma.moduleEligibility.upsert({
-    where: { moduleId_specialty_state: { moduleId, specialty, state } },
+    where: { moduleId_specialty: { moduleId, specialty } },
     update: {},
-    create: { moduleId, specialty, state },
+    create: { moduleId, specialty },
   })
 }
 
@@ -149,14 +149,13 @@ async function main() {
   for (const s of STAFF_SEED) {
     const user = await prisma.user.upsert({
       where: { email: s.email },
-      update: { name: s.name, specialty: s.specialty, state: s.state, role: 'STAFF' },
+      update: { name: s.name, specialty: s.specialty, role: 'STAFF' },
       create: {
         name: s.name,
         email: s.email,
         passwordHash: staffPassword,
         role: 'STAFF',
         specialty: s.specialty,
-        state: s.state,
       },
     })
     staffByEmail[s.email] = user
@@ -266,22 +265,28 @@ async function main() {
     ],
   })
 
-  // --- Eligibility: state '' = all states ---
-  // NJ Home Health Aide (Maria) sees General Knowledge + Science Basics.
-  // PA Personal Care Aide (James) sees only General Knowledge (via '' wildcard).
-  await ensureEligibility(generalKnowledge.id, 'HOME_HEALTH_AIDE', 'NJ')
-  await ensureEligibility(generalKnowledge.id, 'PERSONAL_CARE_AIDE', '')
-  await ensureEligibility(scienceBasics.id, 'HOME_HEALTH_AIDE', '')
-  await ensureEligibility(companionCare.id, 'COMPANION_RESPITE_AIDE', '')
+  // --- Eligibility: specialty-only rules (state dimension removed) ---
+  // General Knowledge -> Home Health Aides
+  // Science Basics    -> Personal Care Aides
+  // Companion Care    -> Companion & Respite Aides
+  // Clear stale rows first so re-seeding stays consistent with current rules.
+  await prisma.moduleEligibility.deleteMany({})
+  await ensureEligibility(generalKnowledge.id, 'HOME_HEALTH_AIDE')
+  await ensureEligibility(scienceBasics.id, 'PERSONAL_CARE_AIDE')
+  await ensureEligibility(companionCare.id, 'COMPANION_RESPITE_AIDE')
   console.log('Seeded module eligibility rows.')
 
-  // --- Assignments (bulk-assign demo: Maria + James get General Knowledge) ---
+  // --- Assignments (bulk-assign demo: every staff has an eligible module) ---
   const maria = staffByEmail['maria.santos@quizapp.com']
   const james = staffByEmail['james.rivera@quizapp.com']
+  const elena = staffByEmail['elena.cruz@quizapp.com']
   const david = staffByEmail['david.kim@quizapp.com']
+  const aisha = staffByEmail['aisha.johnson@quizapp.com']
   await ensureAssignment(maria.id, generalKnowledge.id, admin.id)
-  await ensureAssignment(james.id, generalKnowledge.id, admin.id)
-  await ensureAssignment(david.id, scienceBasics.id, admin.id)
+  await ensureAssignment(david.id, generalKnowledge.id, admin.id)
+  await ensureAssignment(james.id, scienceBasics.id, admin.id)
+  await ensureAssignment(aisha.id, scienceBasics.id, admin.id)
+  await ensureAssignment(elena.id, companionCare.id, admin.id)
   console.log('Seeded staff module assignments.')
 
   // --- Completions via real passing senior submissions (senior name -> staff credit) ---
@@ -291,7 +296,7 @@ async function main() {
     takerName: 'Rosa Delgado',
   })
   await ensurePassingCompletion({
-    staffId: david.id,
+    staffId: james.id,
     moduleId: scienceBasics.id,
     takerName: 'Harold Finch',
   })

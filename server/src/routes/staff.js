@@ -14,12 +14,11 @@ selfRouter.use(requireStaff)
 /**
  * Helper: check if a module is eligible for a staff member
  */
-async function isModuleEligible(moduleId, specialty, state) {
+async function isModuleEligible(moduleId, specialty) {
   const eligible = await prisma.moduleEligibility.findFirst({
     where: {
       moduleId,
       specialty,
-      OR: [{ state }, { state: '' }],
     },
   })
   return !!eligible
@@ -28,11 +27,11 @@ async function isModuleEligible(moduleId, specialty, state) {
 /**
  * Helper: build StaffAssignmentDetail for a staff member
  */
-async function buildAssignmentsForStaff(staffId, specialty, state) {
+async function buildAssignmentsForStaff(staffId, specialty) {
   const assignments = await prisma.staffModuleAssignment.findMany({
     where: { staffId },
     include: {
-      module: { select: { id: true, title: true, status: true, eligibility: { select: { specialty: true, state: true } } } },
+      module: { select: { id: true, title: true, status: true, eligibility: { select: { specialty: true } } } },
       assignedBy: { select: { name: true } },
       completion: { select: { submissionId: true, score: true, total: true, percent: true, passed: true, completedAt: true } },
     },
@@ -40,7 +39,7 @@ async function buildAssignmentsForStaff(staffId, specialty, state) {
   })
 
   return Promise.all(assignments.map(async (a) => {
-    const isEligible = await isModuleEligible(a.moduleId, specialty, state)
+    const isEligible = await isModuleEligible(a.moduleId, specialty)
     return {
       moduleId: a.module.id,
       moduleTitle: a.module.title,
@@ -81,31 +80,30 @@ async function computeRosterStats(staffList) {
     _count: { staffId: true },
   })
 
-  // Eligible modules count per specialty+state group
+  // Eligible modules count per specialty group
   const groups = new Map()
   staffList.forEach(s => {
-    const key = `${s.specialty}|${s.state}`
+    const key = s.specialty
     if (!groups.has(key)) groups.set(key, [])
     groups.get(key).push(s.id)
   })
 
   const eligibleCounts = new Map()
-  for (const [key] of groups) {
-    const [specialty, state] = key.split('|')
+  for (const [specialty] of groups) {
     const count = await prisma.module.count({
       where: {
         status: 'PUBLISHED',
-        eligibility: { some: { specialty, OR: [{ state }, { state: '' }] } },
+        eligibility: { some: { specialty } },
       },
     })
-    eligibleCounts.set(key, count)
+    eligibleCounts.set(specialty, count)
   }
 
   const assignMap = new Map(assignments.map(a => [a.staffId, a._count.staffId]))
   const completeMap = new Map(completions.map(c => [c.staffId, c._count.staffId]))
 
   return staffList.map(s => {
-    const key = `${s.specialty}|${s.state}`
+    const key = s.specialty
     const assigned = assignMap.get(s.id) ?? 0
     const completed = completeMap.get(s.id) ?? 0
     const totalEligible = eligibleCounts.get(key) ?? 0
@@ -128,7 +126,6 @@ adminRouter.get('/', async (req, res) => {
   const limit = Math.min(100, Math.max(1, parseInt(req.query.limit) || 25))
   const search = req.query.search ? String(req.query.search).trim() : ''
   const specialty = req.query.specialty ? String(req.query.specialty) : ''
-  const state = req.query.state ? String(req.query.state) : ''
 
   const where = { role: 'STAFF' }
   if (search) {
@@ -138,12 +135,11 @@ adminRouter.get('/', async (req, res) => {
     ]
   }
   if (specialty) where.specialty = specialty
-  if (state) where.state = state
 
   const [staff, total] = await Promise.all([
     prisma.user.findMany({
       where,
-      select: { id: true, name: true, email: true, specialty: true, state: true },
+      select: { id: true, name: true, email: true, specialty: true },
       orderBy: { name: 'asc' },
       skip: (page - 1) * limit,
       take: limit,
@@ -160,20 +156,20 @@ adminRouter.get('/', async (req, res) => {
 adminRouter.get('/:id', async (req, res) => {
   const staff = await prisma.user.findUnique({
     where: { id: req.params.id, role: 'STAFF' },
-    select: { id: true, name: true, email: true, specialty: true, state: true },
+    select: { id: true, name: true, email: true, specialty: true },
   })
   if (!staff) return res.status(404).json({ error: 'Staff not found' })
 
-  const assignments = await buildAssignmentsForStaff(staff.id, staff.specialty, staff.state)
+  const assignments = await buildAssignmentsForStaff(staff.id, staff.specialty)
   const assignedModules = assignments.length
   const completedModules = assignments.filter(a => a.completion?.passed).length
 
-  // Compute totalEligibleModules for this staff (including wildcard "all states" rules)
+  // Compute totalEligibleModules for this staff (specialty-only rules)
   const totalEligibleModules = await prisma.module.count({
     where: {
       status: 'PUBLISHED',
       eligibility: {
-        some: { specialty: staff.specialty, OR: [{ state: staff.state }, { state: '' }] },
+        some: { specialty: staff.specialty },
       },
     },
   })
@@ -202,7 +198,7 @@ adminRouter.post('/:id/modules', async (req, res) => {
   if (!module) return res.status(404).json({ error: 'Module not found' })
   if (module.status !== 'PUBLISHED') return res.status(400).json({ error: 'Module must be PUBLISHED to assign' })
 
-  const eligible = await isModuleEligible(moduleId, staff.specialty, staff.state)
+  const eligible = await isModuleEligible(moduleId, staff.specialty)
   if (!eligible) return res.status(400).json({ error: 'Staff member is not eligible for this module' })
 
   const assignment = await prisma.staffModuleAssignment.upsert({
@@ -256,7 +252,7 @@ adminRouter.post('/bulk-assign', async (req, res) => {
 
   const staff = await prisma.user.findMany({
     where: { id: { in: staffIds }, role: 'STAFF' },
-    select: { id: true, specialty: true, state: true },
+    select: { id: true, specialty: true },
   })
   if (staff.length !== staffIds.length) {
     return res.status(400).json({ error: 'One or more staff not found' })
@@ -267,7 +263,7 @@ adminRouter.post('/bulk-assign', async (req, res) => {
 
   for (const s of staff) {
     const eligible = await prisma.moduleEligibility.findFirst({
-      where: { moduleId, specialty: s.specialty, OR: [{ state: s.state }, { state: '' }] },
+      where: { moduleId, specialty: s.specialty },
     })
     if (eligible) {
       eligibleStaffIds.add(s.id)
@@ -310,11 +306,11 @@ adminRouter.post('/bulk-assign', async (req, res) => {
 selfRouter.get('/me', async (req, res) => {
   const staff = await prisma.user.findUnique({
     where: { id: req.user.id, role: 'STAFF' },
-    select: { id: true, name: true, email: true, specialty: true, state: true },
+    select: { id: true, name: true, email: true, specialty: true },
   })
   if (!staff) return res.status(404).json({ error: 'Staff not found' })
 
-  const assignments = await buildAssignmentsForStaff(staff.id, staff.specialty, staff.state)
+  const assignments = await buildAssignmentsForStaff(staff.id, staff.specialty)
   const assignedModules = assignments.length
   const completedModules = assignments.filter(a => a.completion?.passed).length
 
@@ -322,7 +318,7 @@ selfRouter.get('/me', async (req, res) => {
     where: {
       status: 'PUBLISHED',
       eligibility: {
-        some: { specialty: staff.specialty, OR: [{ state: staff.state }, { state: '' }] },
+        some: { specialty: staff.specialty },
       },
     },
   })

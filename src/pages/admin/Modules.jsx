@@ -144,7 +144,6 @@ export default function Modules() {
                       {m.eligibility.map((rule, i) => (
                         <span key={i} className="badge badge-soft">
                           {specialtyLabel(rule.specialty)}
-                          {rule.state ? ` · ${rule.state}` : ' · all states'}
                         </span>
                       ))}
                     </div>

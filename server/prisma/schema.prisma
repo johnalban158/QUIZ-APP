@@ -31,7 +31,6 @@ model User {
   passwordHash     String
   role             Role                    @default(TAKER)
   specialty        Specialty?
-  state            String?
   createdAt        DateTime                @default(now())
   modules          Module[]
   assignments      StaffModuleAssignment[]
@@ -62,10 +61,9 @@ model ModuleEligibility {
   moduleId  String
   module    Module    @relation(fields: [moduleId], references: [id], onDelete: Cascade)
   specialty Specialty
-  state     String
 
-  @@unique([moduleId, specialty, state])
-  @@index([specialty, state])
+  @@unique([moduleId, specialty])
+  @@index([specialty])
 }
 
 model StaffModuleAssignment {

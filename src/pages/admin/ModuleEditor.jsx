@@ -54,7 +54,7 @@ export default function ModuleEditor() {
       setContent(found.content ?? '')
       setSrcUrl(found.sourceDocumentUrl ?? '')
       setEligibility(
-        (found.eligibility ?? []).map((e) => ({ specialty: e.specialty, state: e.state ?? '' }))
+        (found.eligibility ?? []).map((e) => ({ specialty: e.specialty }))
       )
     } catch (err) {
       setError(err.message)
@@ -94,7 +94,6 @@ export default function ModuleEditor() {
     try {
       const payload = eligibility.map((r) => ({
         specialty: r.specialty,
-        state: (r.state || '').trim().toUpperCase(),
       }))
       const updated = await api(`/admin/modules/${id}`, { method: 'PATCH', body: { eligibility: payload } })
       setMod((prev) => ({ ...prev, ...updated }))
@@ -287,13 +286,13 @@ export default function ModuleEditor() {
               </div>
               <button
                 className="btn btn-ghost btn-sm"
-                onClick={() => setEligibility((prev) => [...prev, { specialty: SPECIALTIES[0].value, state: '' }])}
+                onClick={() => setEligibility((prev) => [...prev, { specialty: SPECIALTIES[0].value }])}
               >
                 <Plus size={15} /> Add rule
               </button>
             </div>
             <p className="form-hint" style={{ marginBottom: 14 }}>
-              Only staff matching a rule's specialty (and state, unless “All states” is checked) can be assigned this module.
+              Only staff matching a rule's specialty can be assigned this module.
             </p>
 
             {eligibility.length === 0 ? (
@@ -315,27 +314,6 @@ export default function ModuleEditor() {
                         <option key={s.value} value={s.value}>{s.label}</option>
                       ))}
                     </select>
-                    <input
-                      className="input"
-                      value={rule.state}
-                      disabled={rule.state === ''}
-                      placeholder="State (e.g. NJ)"
-                      onChange={(e) =>
-                        setEligibility((prev) => prev.map((r, j) => (j === i ? { ...r, state: e.target.value.toUpperCase() } : r)))
-                      }
-                    />
-                    <label className="rule-all">
-                      <input
-                        type="checkbox"
-                        checked={rule.state === ''}
-                        onChange={(e) =>
-                          setEligibility((prev) =>
-                            prev.map((r, j) => (j === i ? { ...r, state: e.target.checked ? '' : r.state || '' } : r))
-                          )
-                        }
-                      />
-                      All states
-                    </label>
                     <button
                       type="button"
                       className="icon-btn danger"

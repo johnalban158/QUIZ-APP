@@ -1,6 +1,11 @@
 const TOKEN_KEY = 'quizapp_token'
 const USER_KEY = 'quizapp_user'
 
+// Base URL for the REST API. In dev (Vite proxy) it's left empty; the
+// packaged Tauri app has no proxy so VITE_API_URL must point at the API,
+// e.g. VITE_API_URL=http://localhost:4000 during `tauri build`.
+const API_BASE = import.meta.env.VITE_API_URL ?? ''
+
 export function getToken() {
   return localStorage.getItem(TOKEN_KEY)
 }
@@ -36,7 +41,7 @@ export async function api(path, { method = 'GET', body, auth = true } = {}) {
     const token = getToken()
     if (token) headers.Authorization = `Bearer ${token}`
   }
-  const res = await fetch(`/api${path}`, {
+  const res = await fetch(`${API_BASE}/api${path}`, {
     method,
     headers,
     body: body ? JSON.stringify(body) : undefined,

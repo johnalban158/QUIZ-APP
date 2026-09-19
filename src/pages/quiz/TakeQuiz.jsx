@@ -173,7 +173,7 @@ export default function TakeQuiz() {
                     <option value="">Select staff member…</option>
                     {staffList.map((s) => (
                       <option key={s.id} value={s.id}>
-                        {s.name} · {specialtyLabel(s.specialty)}{s.state ? ` · ${s.state}` : ''}
+                        {s.name} · {specialtyLabel(s.specialty)}
                       </option>
                     ))}
                   </select>

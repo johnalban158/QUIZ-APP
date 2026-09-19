@@ -6,6 +6,25 @@
 
 ---
 
+## CHANGES — State dimension removed (eligibility is now specialty-only)
+
+> **The `state` field on `User` and `ModuleEligibility` has been REMOVED from the implemented app.**
+> Everything below that still reads "specialty × state", `state = ''` = "all states", or
+> `ModuleEligibility.state` is **superseded** by the following:
+
+- `User.state` — removed from `schema.prisma`, seed data, auth responses, and the frontend.
+- `ModuleEligibility` — now `{ moduleId, specialty }` only; unique on `[moduleId, specialty]`,
+  indexed on `[specialty]`. A module is eligible for a staff member iff a row exists whose
+  `specialty` equals the staff member's `specialty` (module must also be `PUBLISHED`).
+- `POST /api/auth/staff/register` now requires `{ name, email, password, specialty }` only.
+- All staff/eligibility endpoints match `{ specialty }` only; roster progress is computed per
+  specialty; the frontend eligibility editor uses one specialty select per rule (no state input,
+  no "all states" toggle); the module-card/staff-list eligibility tags show specialty labels only.
+- API contracts below that include `state` in `StaffRosterItem`, `StaffDetail`, login/register
+  payloads, `GET /api/quiz/staff-list`, and eligibility queries are outdated in that respect.
+
+---
+
 ## 0. Current State Recap
 
 | Area | Current |

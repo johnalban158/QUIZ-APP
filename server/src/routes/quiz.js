@@ -7,7 +7,7 @@ const router = Router()
 router.get('/staff-list', async (req, res) => {
   const staff = await prisma.user.findMany({
     where: { role: 'STAFF' },
-    select: { id: true, name: true, specialty: true, state: true },
+    select: { id: true, name: true, specialty: true },
     orderBy: { name: 'asc' },
   })
   res.json(staff)

@@ -4,14 +4,6 @@ export const SPECIALTIES = [
   { value: 'COMPANION_RESPITE_AIDE', label: 'Companion & Respite Aide' },
 ]
 
-export const US_STATES = [
-  'AL', 'AK', 'AZ', 'AR', 'CA', 'CO', 'CT', 'DE', 'DC', 'FL',
-  'GA', 'HI', 'ID', 'IL', 'IN', 'IA', 'KS', 'KY', 'LA', 'ME',
-  'MD', 'MA', 'MI', 'MN', 'MS', 'MO', 'MT', 'NE', 'NV', 'NH',
-  'NJ', 'NM', 'NY', 'NC', 'ND', 'OH', 'OK', 'OR', 'PA', 'RI',
-  'SC', 'SD', 'TN', 'TX', 'UT', 'VT', 'VA', 'WA', 'WV', 'WI', 'WY',
-]
-
 export function specialtyLabel(value) {
   const found = SPECIALTIES.find((s) => s.value === value)
   return found ? found.label : value
