@@ -1,10 +1,12 @@
-import { useLocation, useNavigate, useParams } from 'react-router-dom'
+import { useLocation, useNavigate, useParams, Link } from 'react-router-dom'
 import { Award, CheckCircle, LayoutList, RotateCcw, Trophy, XCircle } from 'lucide-react'
 import Brand from '../../components/Brand'
+import { useAuth } from '../../context/AuthContext'
 
 export default function QuizResult() {
   const { id } = useParams()
   const navigate = useNavigate()
+  const { user } = useAuth()
   const { state } = useLocation()
 
   if (!state) {
@@ -12,13 +14,25 @@ export default function QuizResult() {
     return null
   }
 
-  const { score, total, percent, moduleTitle, takerName, breakdown } = state
+  const {
+    score,
+    total,
+    percent,
+    moduleTitle,
+    takerName,
+    breakdown,
+    passed,
+    completionRecorded,
+  } = state
   const pct = Math.round(percent)
 
+  const passedState = passed === true
   let verdict
-  if (percent >= 80) verdict = { title: 'Excellent work!', icon: Trophy, color: 'var(--ok)' }
-  else if (percent >= 50) verdict = { title: 'Good job!', icon: Award, color: 'var(--ok)' }
-  else verdict = { title: 'Keep practicing', icon: Award, color: 'var(--bad)' }
+  if (passedState) {
+    verdict = { title: 'You passed!', icon: Trophy, color: 'var(--ok)' }
+  } else {
+    verdict = { title: 'Keep practicing', icon: Award, color: 'var(--bad)' }
+  }
 
   const VerdictIcon = verdict.icon
   const ringDeg = `${Math.round((pct / 100) * 360)}deg`
@@ -28,24 +42,50 @@ export default function QuizResult() {
       <Brand back="/quiz" backLabel="All quizzes" right={takerName} />
       <div className="quiz-shell">
         <div className="card result-card">
-          <div className="ring" style={{ '--ring-deg': ringDeg }}>
+          <div
+            className="ring"
+            style={{
+              '--ring-deg': ringDeg,
+              background: `conic-gradient(${passedState ? 'var(--ok)' : 'var(--bad)'} var(--ring-deg), var(--surface-2) 0deg)`,
+            }}
+          >
             <div className="ring-inner">
               <div className="score-num">{score}/{total}</div>
               <div className="score-pct">{pct}% correct</div>
             </div>
           </div>
 
-          <h2 className="result-verdict" style={{ color: verdict.color }}>
+          <h2 className={`result-verdict ${passedState ? 'result-pass' : 'result-fail'}`} style={{ color: verdict.color }}>
             <VerdictIcon size={20} style={{ verticalAlign: -3, marginRight: 6 }} />
             {verdict.title}
           </h2>
           <p className="result-msg">{moduleTitle}</p>
 
+          <div className="result-credit">
+            {passedState && completionRecorded ? (
+              <span className="badge badge-ok">
+                <CheckCircle size={13} /> Completion recorded for your staff member
+              </span>
+            ) : !passedState ? (
+              <span className="badge badge-bad">
+                <XCircle size={13} /> No credit recorded — a passing score is needed
+              </span>
+            ) : (
+              <span className="badge badge-draft">Completion pending</span>
+            )}
+          </div>
+
           <div className="result-actions">
-            <button className="btn btn-ghost" onClick={() => navigate('/quiz')}>
-              <LayoutList size={16} /> All quizzes
-            </button>
-            <button className="btn btn-primary" onClick={() => navigate(`/quiz/${id}`)}>
+            {user?.role === 'STAFF' ? (
+              <Link to="/staff" className="btn btn-primary">
+                <LayoutList size={16} /> Back to my training
+              </Link>
+            ) : (
+              <button className="btn btn-ghost" onClick={() => navigate('/quiz')}>
+                <LayoutList size={16} /> All quizzes
+              </button>
+            )}
+            <button className="btn btn-ghost" onClick={() => navigate(`/quiz/${id}`)}>
               <RotateCcw size={16} /> Try again
             </button>
           </div>

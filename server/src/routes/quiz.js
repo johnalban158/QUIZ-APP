@@ -3,6 +3,16 @@ import { prisma } from '../prisma.js'
 
 const router = Router()
 
+// GET /api/quiz/staff-list - Public list of staff for senior selection
+router.get('/staff-list', async (req, res) => {
+  const staff = await prisma.user.findMany({
+    where: { role: 'STAFF' },
+    select: { id: true, name: true, specialty: true, state: true },
+    orderBy: { name: 'asc' },
+  })
+  res.json(staff)
+})
+
 router.get('/', async (req, res) => {
   const modules = await prisma.module.findMany({
     where: { status: 'PUBLISHED' },
@@ -37,32 +47,11 @@ router.get('/:id', async (req, res) => {
     },
   })
   if (!module) return res.status(404).json({ error: 'Quiz not found' })
-  res.json({ id: module.id, title: module.title, description: module.description, questions: module.questions })
+  res.json({ id: module.id, title: module.title, description: module.description, content: module.content, questions: module.questions })
 })
 
-router.post('/:id/submit', async (req, res) => {
-  const { takerName, takerEmail, answers, timeTakenSeconds } = req.body ?? {}
-  if (!takerName || !takerName.trim()) {
-    return res.status(400).json({ error: 'Name is required' })
-  }
-  if (!Array.isArray(answers) || answers.length === 0) {
-    return res.status(400).json({ error: 'answers must be a non-empty array' })
-  }
-  if (timeTakenSeconds !== undefined && (!Number.isInteger(timeTakenSeconds) || timeTakenSeconds < 0)) {
-    return res.status(400).json({ error: 'timeTakenSeconds must be a non-negative integer' })
-  }
-
-  const module = await prisma.module.findFirst({
-    where: { id: req.params.id, status: 'PUBLISHED' },
-    include: {
-      questions: {
-        orderBy: { orderIndex: 'asc' },
-        include: { options: true },
-      },
-    },
-  })
-  if (!module) return res.status(404).json({ error: 'Quiz not found' })
-
+// Shared helper for grading
+async function gradeModule(module, answers) {
   const byId = new Map(module.questions.flatMap((q) => q.options.map((o) => [o.id, { q, o }])))
   let score = 0
   const breakdown = []
@@ -89,27 +78,107 @@ router.post('/:id/submit', async (req, res) => {
     })
 
   const total = module.questions.length
-  const submission = await prisma.submission.create({
-    data: {
-      moduleId: module.id,
-      takerName: takerName.trim(),
-      takerEmail: (takerEmail ?? '').trim(),
-      score,
-      total,
-      timeTakenSeconds: timeTakenSeconds ?? null,
-      answers: { create: answerLines },
+  const percent = total ? Math.round((score / total) * 100) : 0
+  const passed = percent >= 70
+
+  return { score, total, percent, passed, breakdown, answerLines }
+}
+
+router.post('/:id/submit', async (req, res) => {
+  const { takerName, staffMemberId, answers, timeTakenSeconds } = req.body ?? {}
+  if (!takerName || !takerName.trim()) {
+    return res.status(400).json({ error: 'Name is required' })
+  }
+  if (!staffMemberId) {
+    return res.status(400).json({ error: 'staffMemberId is required' })
+  }
+  if (!Array.isArray(answers) || answers.length === 0) {
+    return res.status(400).json({ error: 'answers must be a non-empty array' })
+  }
+  if (timeTakenSeconds !== undefined && (!Number.isInteger(timeTakenSeconds) || timeTakenSeconds < 0)) {
+    return res.status(400).json({ error: 'timeTakenSeconds must be a non-negative integer' })
+  }
+
+  // Validate staff member exists and is STAFF
+  const staff = await prisma.user.findUnique({ where: { id: staffMemberId } })
+  if (!staff || staff.role !== 'STAFF') {
+    return res.status(400).json({ error: 'Invalid staff member' })
+  }
+
+  const module = await prisma.module.findFirst({
+    where: { id: req.params.id, status: 'PUBLISHED' },
+    include: {
+      questions: {
+        orderBy: { orderIndex: 'asc' },
+        include: { options: true },
+      },
     },
+  })
+  if (!module) return res.status(404).json({ error: 'Quiz not found' })
+
+  // Check assignment exists (staff must be assigned this module)
+  const assignment = await prisma.staffModuleAssignment.findUnique({
+    where: { staffId_moduleId: { staffId: staffMemberId, moduleId: module.id } },
+  })
+  if (!assignment) {
+    return res.status(400).json({ error: 'This module is not assigned to the selected staff member' })
+  }
+
+  const { score, total, percent, passed, breakdown, answerLines } = await gradeModule(module, answers)
+
+  // Transaction: create Submission + (if passed) StaffModuleCompletion
+  const result = await prisma.$transaction(async (tx) => {
+    const submission = await tx.submission.create({
+      data: {
+        moduleId: module.id,
+        staffMemberId,
+        takerName: takerName.trim(),
+        takerEmail: '',
+        score,
+        total,
+        timeTakenSeconds: timeTakenSeconds ?? null,
+        answers: { create: answerLines },
+      },
+    })
+
+    let completion = null
+    if (passed) {
+      completion = await tx.staffModuleCompletion.upsert({
+        where: { staffId_moduleId: { staffId: staffMemberId, moduleId: module.id } },
+        create: {
+          staffId: staffMemberId,
+          moduleId: module.id,
+          submissionId: submission.id,
+          score,
+          total,
+          percent,
+          passed: true,
+        },
+        update: {
+          submissionId: submission.id,
+          score,
+          total,
+          percent,
+          passed: true,
+          completedAt: new Date(),
+        },
+      })
+    }
+
+    return { submission, completion }
   })
 
   res.status(201).json({
-    submissionId: submission.id,
+    submissionId: result.submission.id,
     moduleTitle: module.title,
-    takerName: submission.takerName,
+    takerName: result.submission.takerName,
+    staffMemberId,
     score,
     total,
-    percent: total ? Math.round((score / total) * 100) : 0,
-    timeTakenSeconds: submission.timeTakenSeconds,
+    percent,
+    passed,
     breakdown,
+    completionRecorded: !!result.completion,
   })
 })
 

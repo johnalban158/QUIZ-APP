@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { BookOpen, ChevronRight, FileText, Users, TrendingUp, Plus } from 'lucide-react'
+import { BookOpen, ChevronRight, FileText, Users, TrendingUp, Plus, Link2 } from 'lucide-react'
 import { api } from '../../api'
+import { specialtyLabel } from '../../lib'
 
 function timeAgo(iso) {
   if (!iso) return null
@@ -72,9 +73,9 @@ export default function Modules() {
     <>
       <div className="mod-header">
         <div>
-          <p className="eyebrow">Quiz sets</p>
-          <h1>Modules</h1>
-          <p className="page-sub">Create and manage your quiz sets.</p>
+          <p className="eyebrow">Content Library</p>
+          <h1>Content Library</h1>
+          <p className="page-sub">Create and manage training modules — reading content plus the quiz that follows it.</p>
         </div>
         <button className="btn btn-primary" onClick={createModule} disabled={creating}>
           <Plus size={16} /> New module
@@ -125,13 +126,29 @@ export default function Modules() {
                     <span className={`badge ${m.status === 'PUBLISHED' ? 'badge-published' : 'badge-draft'}`}>
                       {m.status === 'PUBLISHED' ? 'Published' : 'Draft'}
                     </span>
+                    {m.content && (
+                      <span className="chip chip-sm"><FileText size={13} /> Reading content</span>
+                    )}
+                    {m.sourceDocumentUrl && (
+                      <span className="chip chip-sm"><Link2 size={13} /> Source doc</span>
+                    )}
                     <span className="muted mod-item-count">
-                      {m.questions.length} questions · {m._count.submissions} submissions
+                      {m.questions ? m.questions.length : 0} questions · {m._count?.submissions ?? 0} submissions
                     </span>
                     {m.avgScore !== null && (
                       <span className="badge badge-ok">Avg {Math.round(m.avgScore)}%</span>
                     )}
                   </div>
+                  {Array.isArray(m.eligibility) && m.eligibility.length > 0 && (
+                    <div className="elig-tags">
+                      {m.eligibility.map((rule, i) => (
+                        <span key={i} className="badge badge-soft">
+                          {specialtyLabel(rule.specialty)}
+                          {rule.state ? ` · ${rule.state}` : ' · all states'}
+                        </span>
+                      ))}
+                    </div>
+                  )}
                 </div>
                 <ChevronRight size={18} className="muted" />
               </button>

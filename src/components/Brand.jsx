@@ -1,11 +1,13 @@
 import { useState } from 'react'
 import { Link, NavLink, useNavigate } from 'react-router-dom'
-import { ArrowLeft, GraduationCap, LogOut, Moon, Play, Shield, Sun } from 'lucide-react'
+import { ArrowLeft, BookOpen, GraduationCap, LogOut, Moon, Play, Shield, Sun } from 'lucide-react'
+import { useAuth } from '../context/AuthContext'
 
 const THEME_KEY = 'kanani_theme'
 
 export default function Brand({ right, back, backLabel }) {
   const navigate = useNavigate()
+  const { user } = useAuth()
   const [dark, setDark] = useState(() => document.documentElement.classList.contains('dark'))
 
   const toggleTheme = () => {
@@ -41,10 +43,18 @@ export default function Brand({ right, back, backLabel }) {
             <Play size={15} />
             <span className="nav-label">Take a quiz</span>
           </NavLink>
-          <NavLink to="/admin" className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}>
-            <Shield size={15} />
-            <span className="nav-label">Admin</span>
-          </NavLink>
+          {user?.role === 'ADMIN' && (
+            <NavLink to="/admin" className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}>
+              <Shield size={15} />
+              <span className="nav-label">Admin</span>
+            </NavLink>
+          )}
+          {user?.role === 'STAFF' && (
+            <NavLink to="/staff" className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}>
+              <BookOpen size={15} />
+              <span className="nav-label">My training</span>
+            </NavLink>
+          )}
         </nav>
 
         <button

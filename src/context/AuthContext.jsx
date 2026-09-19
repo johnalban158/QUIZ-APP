@@ -18,13 +18,25 @@ export function AuthProvider({ children }) {
     return data.user
   }, [])
 
+  const staffLogin = useCallback(async (email, password) => {
+    const data = await api('/auth/staff/login', {
+      method: 'POST',
+      body: { email, password },
+      auth: false,
+    })
+    setToken(data.token)
+    setStoredUser(data.user)
+    setUser(data.user)
+    return data.user
+  }, [])
+
   const logout = useCallback(() => {
     setToken(null)
     setStoredUser(null)
     setUser(null)
   }, [])
 
-  const value = useMemo(() => ({ user, login, logout }), [user, login, logout])
+  const value = useMemo(() => ({ user, login, staffLogin, logout }), [user, login, staffLogin, logout])
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }
 

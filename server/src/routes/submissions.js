@@ -15,7 +15,7 @@ router.get('/', async (req, res) => {
 
   const submissions = await prisma.submission.findMany({
     where,
-    include: { module: { select: { id: true, title: true } } },
+    include: { module: { select: { id: true, title: true } }, staffMember: { select: { id: true, name: true } } },
     orderBy: { [sortField]: sortOrder },
   })
   res.json(submissions)
@@ -26,6 +26,7 @@ router.get('/:id', async (req, res) => {
     where: { id: req.params.id },
     include: {
       module: { select: { id: true, title: true } },
+      staffMember: { select: { id: true, name: true } },
       answers: {
         include: {
           question: {

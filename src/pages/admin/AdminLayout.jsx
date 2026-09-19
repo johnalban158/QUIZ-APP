@@ -1,5 +1,5 @@
 import { NavLink, Outlet, Navigate } from 'react-router-dom'
-import { BookOpen, ListChecks, LogOut } from 'lucide-react'
+import { BookOpen, ListChecks, LogOut, Users } from 'lucide-react'
 import { useAuth } from '../../context/AuthContext'
 import { AdminBrand } from '../../components/Brand'
 
@@ -9,7 +9,8 @@ export default function AdminLayout() {
   if (!user || user.role !== 'ADMIN') return <Navigate to="/admin/login" replace />
 
   const tabs = [
-    { to: '/admin', label: 'Modules', icon: BookOpen, end: true },
+    { to: '/admin/staff', label: 'Staff', icon: Users },
+    { to: '/admin/modules', label: 'Content Library', icon: BookOpen },
     { to: '/admin/submissions', label: 'Submissions', icon: ListChecks },
   ]
 
@@ -33,7 +34,6 @@ export default function AdminLayout() {
                 <NavLink
                   key={tab.to}
                   to={tab.to}
-                  end={tab.end}
                   className={({ isActive }) => (isActive ? 'active' : '')}
                 >
                   <tab.icon size={17} /> {tab.label}

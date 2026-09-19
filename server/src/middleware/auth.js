@@ -23,9 +23,18 @@ export function requireAdmin(req, res, next) {
   })
 }
 
+export function requireStaff(req, res, next) {
+  requireAuth(req, res, () => {
+    if (req.user.role !== 'STAFF' && req.user.role !== 'ADMIN') {
+      return res.status(403).json({ error: 'Staff access required' })
+    }
+    next()
+  })
+}
+
 export function signToken(user) {
   return jwt.sign(
-    { id: user.id, name: user.name, email: user.email, role: user.role },
+    { id: user.id, name: user.name, email: user.email, role: user.role, specialty: user.specialty, state: user.state },
     process.env.JWT_SECRET,
     { expiresIn: '7d' }
   )

@@ -1,6 +1,14 @@
 import { Router } from 'express'
 import { prisma } from '../prisma.js'
 import { requireAdmin } from '../middleware/auth.js'
+import { upload } from '../middleware/upload.js'
+import path from 'path'
+import { fileURLToPath } from 'url'
+import fs from 'fs'
+
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = path.dirname(__filename)
+const uploadDir = path.join(__dirname, '..', '..', 'uploads')
 
 const router = Router()
 
@@ -11,6 +19,7 @@ const withQuestions = {
     orderBy: { orderIndex: 'asc' },
     include: { options: { orderBy: { id: 'asc' } } },
   },
+  eligibility: { select: { specialty: true, state: true } },
   _count: { select: { submissions: true, questions: true } },
 }
 
@@ -75,7 +84,7 @@ router.get('/', async (req, res) => {
 })
 
 router.post('/', async (req, res) => {
-  const { title, description, status } = req.body ?? {}
+  const { title, description, status, content, eligibility } = req.body ?? {}
   if (!title || !title.trim()) {
     return res.status(400).json({ error: 'Title is required' })
   }
@@ -84,7 +93,9 @@ router.post('/', async (req, res) => {
       title: title.trim(),
       description: description ?? '',
       status: status === 'PUBLISHED' ? 'PUBLISHED' : 'DRAFT',
+      content: content ?? '',
       createdById: req.user.id,
+      eligibility: eligibility ? { create: eligibility } : undefined,
     },
     include: withQuestions,
   })
@@ -92,7 +103,7 @@ router.post('/', async (req, res) => {
 })
 
 router.patch('/:id', async (req, res) => {
-  const { title, description, status } = req.body ?? {}
+  const { title, description, status, content, eligibility } = req.body ?? {}
   const data = {}
   if (typeof title === 'string') {
     if (!title.trim()) return res.status(400).json({ error: 'Title cannot be empty' })
@@ -100,6 +111,15 @@ router.patch('/:id', async (req, res) => {
   }
   if (typeof description === 'string') data.description = description
   if (['DRAFT', 'PUBLISHED'].includes(status)) data.status = status
+  if (typeof content === 'string') data.content = content
+
+  // Handle eligibility replacement if provided
+  if (eligibility !== undefined) {
+    data.eligibility = {
+      deleteMany: {},
+      create: eligibility,
+    }
+  }
 
   const module = await prisma.module.update({
     where: { id: req.params.id },
@@ -111,6 +131,74 @@ router.patch('/:id', async (req, res) => {
 
 router.delete('/:id', async (req, res) => {
   await prisma.module.delete({ where: { id: req.params.id } })
+  res.json({ ok: true })
+})
+
+// GET /api/admin/modules/eligible - Get modules eligible for given staff IDs
+router.get('/eligible', async (req, res) => {
+  const staffIds = (req.query.staffIds) ? (Array.isArray(req.query.staffIds) ? req.query.staffIds : [req.query.staffIds]) : []
+  if (staffIds.length === 0) return res.json([])
+
+  const staff = await prisma.user.findMany({
+    where: { id: { in: staffIds }, role: 'STAFF' },
+    select: { id: true, specialty: true, state: true },
+  })
+  if (staff.length === 0) return res.json([])
+
+  // Build OR conditions: (specialty=X AND state=Y) OR (specialty=X AND state='')
+  const orConditions = staff.flatMap(s => [
+    { specialty: s.specialty, state: s.state },
+    { specialty: s.specialty, state: '' },
+  ])
+
+  const eligibleModuleIds = await prisma.moduleEligibility.findMany({
+    where: { OR: orConditions },
+    select: { moduleId: true },
+    distinct: ['moduleId'],
+  })
+
+  const moduleIds = eligibleModuleIds.map(e => e.moduleId)
+
+  const modules = await prisma.module.findMany({
+    where: { id: { in: moduleIds }, status: 'PUBLISHED' },
+    select: { id: true, title: true, description: true, status: true },
+    orderBy: { title: 'asc' },
+  })
+  res.json(modules)
+})
+
+// POST /api/admin/modules/:id/upload - Upload source document
+router.post('/:id/upload', upload.single('file'), async (req, res) => {
+  if (!req.file) return res.status(400).json({ error: 'No file uploaded' })
+
+  const module = await prisma.module.findUnique({ where: { id: req.params.id } })
+  if (!module) return res.status(404).json({ error: 'Module not found' })
+
+  // Delete old file if exists
+  if (module.sourceDocumentUrl) {
+    const oldPath = path.join(uploadDir, path.basename(module.sourceDocumentUrl))
+    if (fs.existsSync(oldPath)) fs.unlinkSync(oldPath)
+  }
+
+  const url = `/uploads/${req.file.filename}`
+  await prisma.module.update({
+    where: { id: module.id },
+    data: { sourceDocumentUrl: url },
+  })
+
+  res.json({ ok: true, url, filename: req.file.filename })
+})
+
+// DELETE /api/admin/modules/:id/upload - Delete source document
+router.delete('/:id/upload', async (req, res) => {
+  const module = await prisma.module.findUnique({ where: { id: req.params.id } })
+  if (!module) return res.status(404).json({ error: 'Module not found' })
+
+  if (module.sourceDocumentUrl) {
+    const filePath = path.join(uploadDir, path.basename(module.sourceDocumentUrl))
+    if (fs.existsSync(filePath)) fs.unlinkSync(filePath)
+    await prisma.module.update({ where: { id: module.id }, data: { sourceDocumentUrl: null } })
+  }
   res.json({ ok: true })
 })
 

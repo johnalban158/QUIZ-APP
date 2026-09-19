@@ -29,7 +29,7 @@ export default function QuizList() {
           <div>
             <p className="eyebrow">Quizzes</p>
             <h1 className="page-title">Available quizzes</h1>
-            <p className="page-sub">Pick a published module to get started. No account needed.</p>
+            <p className="page-sub">Read the material, then take the quiz. Passing records credit for the staff member assisting you.</p>
           </div>
           {quizzes && quizzes.length > 0 && (
             <span className="chip"><FileQuestion size={14} /> {quizzes.length} quiz{quizzes.length === 1 ? '' : 'zes'}</span>

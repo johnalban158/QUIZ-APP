@@ -1,31 +1,44 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { ArrowLeft, ArrowRight, Check, FileQuestion, Mail, Send, Timer, User } from 'lucide-react'
+import { ArrowLeft, ArrowRight, BookOpen, Check, FileQuestion, Send, Timer, UserRound } from 'lucide-react'
 import Brand from '../../components/Brand'
+import { useAuth } from '../../context/AuthContext'
+import { specialtyLabel } from '../../lib'
 
 export default function TakeQuiz() {
   const { id } = useParams()
   const navigate = useNavigate()
+  const { user } = useAuth()
   const [quiz, setQuiz] = useState(null)
+  const [staffList, setStaffList] = useState([])
   const [error, setError] = useState('')
   const [name, setName] = useState('')
-  const [email, setEmail] = useState('')
+  const [staffId, setStaffId] = useState('')
   const [started, setStarted] = useState(false)
   const [current, setCurrent] = useState(0)
   const [answers, setAnswers] = useState({})
   const [submitting, setSubmitting] = useState(false)
+  const startedAtRef = useRef(null)
+
+  const isStaff = user?.role === 'STAFF'
 
   useEffect(() => {
     (async () => {
+      setError('')
       try {
-        const data = await fetch(`/api/quiz/${id}`).then((r) => r.json())
-        if (data.error) throw new Error(data.error)
-        setQuiz(data)
+        const [quizData, staffData] = await Promise.all([
+          fetch(`/api/quiz/${id}`).then((r) => r.json()),
+          fetch('/api/quiz/staff-list').then((r) => r.json()),
+        ])
+        if (quizData.error) throw new Error(quizData.error)
+        setQuiz(quizData)
+        setStaffList(Array.isArray(staffData) ? staffData : [])
+        if (user?.role === 'STAFF' && user.id) setStaffId(user.id)
       } catch (err) {
         setError(err.message)
       }
     })()
-  }, [id])
+  }, [id, user])
 
   const selectOption = (questionId, optionId) => {
     setAnswers((prev) => ({ ...prev, [questionId]: optionId }))
@@ -66,6 +79,7 @@ export default function TakeQuiz() {
   const q = questions[current]
   const answeredCount = Object.keys(answers).length
   const progressPct = total ? Math.round(((current + 1) / total) * 100) : 0
+  const staffName = staffList.find((s) => s.id === staffId)
 
   if (total === 0) {
     return (
@@ -91,8 +105,11 @@ export default function TakeQuiz() {
     try {
       const body = {
         takerName: name.trim(),
-        takerEmail: email.trim(),
-        answers: Object.entries(answers).map(([questionId, optionId]) => ({ questionId, optionId })),
+        staffMemberId: staffId,
+        answers: Object.values(answers).map((optionId) => ({ optionId })),
+        timeTakenSeconds: startedAtRef.current
+          ? Math.max(1, Math.round((Date.now() - startedAtRef.current) / 1000))
+          : undefined,
       }
       const data = await fetch(`/api/quiz/${id}/submit`, {
         method: 'POST',
@@ -116,7 +133,7 @@ export default function TakeQuiz() {
         <div className="quiz-shell">
           <div className="card quiz-intro">
             <span className="quiz-intro-icon"><FileQuestion size={26} /></span>
-            <p className="eyebrow">Published quiz</p>
+            <p className="eyebrow">Training module</p>
             <h1 className="quiz-intro-title">{quiz.title}</h1>
             {quiz.description && <p className="quiz-intro-desc">{quiz.description}</p>}
             <div className="quiz-intro-meta">
@@ -124,23 +141,54 @@ export default function TakeQuiz() {
               <span className="badge badge-draft"><Timer size={12} /> ~{Math.max(1, Math.round(total * 0.5))} min</span>
             </div>
 
+            {quiz.content && (
+              <div className="quiz-reading">
+                <div className="quiz-reading-head"><BookOpen size={15} /> Read before you start</div>
+                <div className="reading-body">{quiz.content}</div>
+              </div>
+            )}
+
             {error && <div className="form-error">{error}</div>}
 
             <div className="quiz-intro-form">
               <div className="field">
-                <label><User size={14} /> Your name</label>
+                <label><UserRound size={14} /> Your name</label>
                 <input className="input input-lg" value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Alice" />
               </div>
-              <div className="field">
-                <label><Mail size={14} /> Email (optional)</label>
-                <input className="input input-lg" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="alice@example.com" />
-              </div>
+
+              {isStaff ? (
+                <div className="field">
+                  <label><UserRound size={14} /> Training credit</label>
+                  <input className="input input-lg" value={user ? user.name : ''} readOnly />
+                  <p className="form-hint">Results will be recorded for your own training plan.</p>
+                </div>
+              ) : (
+                <div className="field">
+                  <label><UserRound size={14} /> Who is assisting you? <span className="req">*</span></label>
+                  <select
+                    className="select input-lg"
+                    value={staffId}
+                    onChange={(e) => setStaffId(e.target.value)}
+                  >
+                    <option value="">Select staff member…</option>
+                    {staffList.map((s) => (
+                      <option key={s.id} value={s.id}>
+                        {s.name} · {specialtyLabel(s.specialty)}{s.state ? ` · ${s.state}` : ''}
+                      </option>
+                    ))}
+                  </select>
+                  <p className="form-hint">Your result counts toward this staff member's training plan.</p>
+                </div>
+              )}
             </div>
 
             <button
               className="btn btn-primary btn-block"
-              disabled={!name.trim()}
-              onClick={() => setStarted(true)}
+              disabled={!name.trim() || (isStaff ? false : !staffId)}
+              onClick={() => {
+                setStarted(true)
+                startedAtRef.current = Date.now()
+              }}
             >
               Start quiz <ArrowRight size={16} />
             </button>
@@ -153,7 +201,7 @@ export default function TakeQuiz() {
   // Question screen
   return (
     <>
-      <Brand back="/quiz" backLabel="Leave quiz" right={`${current + 1} / ${total}`} />
+      <Brand back="/quiz" backLabel="Leave quiz" right={`${current + 1} / ${total}${staffName ? ` · ${staffName.name}` : ''}`} />
       <div className="quiz-shell">
         <div className="quiz-progress-head">
           <span>Question {current + 1} of {total}</span>
