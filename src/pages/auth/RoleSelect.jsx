@@ -15,7 +15,7 @@ const ROLES = [
   {
     key: 'staff',
     label: 'Staff',
-    sub: 'Run a quiz session and earn training credit',
+    sub: 'Run a quiz session',
     icon: UserCog,
     to: '/staff/login',
   },
@@ -42,7 +42,7 @@ export default function RoleSelect() {
       </div>
       <div className="role-select">
         <section className="card role-card-head">
-          <p className="eyebrow">Goodwill Caring Health Services</p>
+          <p className="eyebrow">Goodwill Caring Care Academy</p>
           <h1 className="role-title">Welcome</h1>
           <p className="role-sub">Who's signing in today?</p>
 
@@ -80,7 +80,7 @@ export default function RoleSelect() {
           </div>
         </section>
       </div>
-      <footer className="site-footer">Goodwill Caring Health Services · built with React + Express</footer>
+      <footer className="site-footer">Goodwill Caring Care Academy · built with React + Express</footer>
     </>
   )
 }
