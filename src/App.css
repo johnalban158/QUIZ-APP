@@ -4194,6 +4194,46 @@ textarea:focus-visible {
   color: var(--accent);
 }
 
+/* ---------- Auto-credit note: saved senior with a preferred staff ---------- */
+.staff-credit-note {
+  flex-basis: 100%;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 8px;
+  padding: 10px 12px;
+  background: var(--surface);
+  border: 1px solid rgba(62, 67, 216, 0.35);
+  border-radius: 12px;
+  font-size: 1.02rem;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.staff-credit-note > svg {
+  flex-shrink: 0;
+  color: var(--accent);
+}
+
+.staff-credit-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  line-height: 1.35;
+}
+
+.staff-credit-text strong {
+  color: var(--accent);
+}
+
+.staff-credit-note .read-aloud-btn {
+  margin-left: auto;
+  min-height: 40px;
+  padding: 6px 12px;
+  font-size: 0.9rem;
+}
+
 /* ---------- Loading / empty / error states ---------- */
 .senior-loading {
   display: flex;
@@ -4232,4 +4272,269 @@ textarea:focus-visible {
 
 .senior-fallback-input {
   margin-bottom: 0;
+}
+
+/* =====================================================================
+   Role selection (v6) — "Who's signing in today?"
+   Three large, calm, solid-colour option cards (no gradients).
+   ===================================================================== */
+:root {
+  /* Resident — warm teal */
+  --role-resident: #1f7a70;
+  --role-resident-soft: #e7f2f0;
+  --role-resident-soft-2: #d5ebe7;
+  /* Staff — friendly blue */
+  --role-staff: #2b62c4;
+  --role-staff-soft: #e8effb;
+  --role-staff-soft-2: #d7e3f7;
+  /* Admin — deep purple */
+  --role-admin: #5b3fbd;
+  --role-admin-soft: #eeeafb;
+  --role-admin-soft-2: #e2dbf5;
+}
+
+.role-select {
+  min-height: calc(100vh - 66px);
+  display: grid;
+  place-items: center;
+  padding: 44px 24px;
+}
+
+.role-card-head {
+  width: 100%;
+  max-width: 600px;
+  text-align: center;
+  padding: 44px 40px;
+  border-radius: 22px;
+}
+
+.role-title {
+  font-size: 2.6rem;
+  font-weight: 700;
+  margin: 6px 0 6px;
+}
+
+.role-sub {
+  color: var(--ink-2);
+  font-size: 1.2rem;
+  margin-bottom: 30px;
+}
+
+.role-options {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  text-align: left;
+}
+
+.role-card {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  width: 100%;
+  min-height: 84px;
+  padding: 20px 22px;
+  border: 2px solid var(--border);
+  border-radius: 16px;
+  background: var(--surface);
+  color: var(--ink);
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease,
+    transform 0.05s ease;
+}
+
+.role-card-icon {
+  width: 54px;
+  height: 54px;
+  border-radius: 15px;
+  display: grid;
+  place-items: center;
+  color: #fff;
+  flex-shrink: 0;
+}
+
+.role-card-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.role-card-label {
+  font-size: 1.25rem;
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+.role-card-sub {
+  font-size: 1rem;
+  color: var(--ink-2);
+  line-height: 1.4;
+}
+
+.role-card-arrow {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  transition: transform 0.15s ease, background 0.15s ease, color 0.15s ease;
+}
+
+/* ---------- Resident · warm teal ---------- */
+.role-card--resident {
+  border-color: rgba(31, 122, 112, 0.4);
+}
+
+.role-card--resident .role-card-icon {
+  background: var(--role-resident);
+}
+
+.role-card--resident .role-card-arrow {
+  background: var(--role-resident-soft);
+  color: var(--role-resident);
+}
+
+.role-card--resident:hover {
+  background: var(--role-resident-soft);
+  border-color: var(--role-resident);
+}
+
+.role-card--resident.pressed,
+.role-card--resident:active {
+  background: var(--role-resident-soft-2);
+  transform: translateY(1px);
+}
+
+/* ---------- Staff · friendly blue ---------- */
+.role-card--staff {
+  border-color: rgba(43, 98, 196, 0.4);
+}
+
+.role-card--staff .role-card-icon {
+  background: var(--role-staff);
+}
+
+.role-card--staff .role-card-arrow {
+  background: var(--role-staff-soft);
+  color: var(--role-staff);
+}
+
+.role-card--staff:hover {
+  background: var(--role-staff-soft);
+  border-color: var(--role-staff);
+}
+
+.role-card--staff.pressed,
+.role-card--staff:active {
+  background: var(--role-staff-soft-2);
+  transform: translateY(1px);
+}
+
+/* ---------- Admin · deep purple ---------- */
+.role-card--admin {
+  border-color: rgba(91, 63, 189, 0.4);
+}
+
+.role-card--admin .role-card-icon {
+  background: var(--role-admin);
+}
+
+.role-card--admin .role-card-arrow {
+  background: var(--role-admin-soft);
+  color: var(--role-admin);
+}
+
+.role-card--admin:hover {
+  background: var(--role-admin-soft);
+  border-color: var(--role-admin);
+}
+
+.role-card--admin.pressed,
+.role-card--admin:active {
+  background: var(--role-admin-soft-2);
+  transform: translateY(1px);
+}
+
+.role-card:hover .role-card-arrow {
+  transform: translateX(2px);
+}
+
+/* ---------- Dark theme: keep the calm solid colours readable ---------- */
+.dark .role-card {
+  background: var(--surface);
+}
+
+.dark .role-card--resident {
+  border-color: rgba(87, 190, 173, 0.55);
+}
+
+.dark .role-card--resident:hover,
+.dark .role-card--resident.pressed,
+.dark .role-card--resident:active {
+  background: rgba(39, 103, 95, 0.55);
+}
+
+.dark .role-card--staff {
+  border-color: rgba(119, 156, 226, 0.55);
+}
+
+.dark .role-card--staff:hover,
+.dark .role-card--staff.pressed,
+.dark .role-card--staff:active {
+  background: rgba(46, 84, 158, 0.55);
+}
+
+.dark .role-card--admin {
+  border-color: rgba(154, 130, 230, 0.55);
+}
+
+.dark .role-card--admin:hover,
+.dark .role-card--admin.pressed,
+.dark .role-card--admin:active {
+  background: rgba(83, 62, 163, 0.55);
+}
+
+.dark .role-card--resident .role-card-arrow {
+  background: rgba(87, 190, 173, 0.18);
+  color: #76cfbc;
+}
+
+.dark .role-card--staff .role-card-arrow {
+  background: rgba(119, 156, 226, 0.18);
+  color: #a8c3f0;
+}
+
+.dark .role-card--admin .role-card-arrow {
+  background: rgba(154, 130, 230, 0.18);
+  color: #c4b6f3;
+}
+
+/* ---------- Responsive: roomier on phones ---------- */
+@media (max-width: 640px) {
+  .role-select {
+    padding: 28px 16px;
+  }
+
+  .role-card-head {
+    padding: 32px 20px;
+  }
+
+  .role-title {
+    font-size: 2.1rem;
+  }
+
+  .role-card {
+    min-height: 80px;
+    padding: 16px 18px;
+    gap: 14px;
+  }
+
+  .role-card-label {
+    font-size: 1.18rem;
+  }
 }

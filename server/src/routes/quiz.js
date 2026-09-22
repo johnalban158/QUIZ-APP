@@ -168,9 +168,6 @@ router.post('/:id/submit', async (req, res) => {
   if (!takerName || !takerName.trim()) {
     return res.status(400).json({ error: 'Name is required' })
   }
-  if (!staffMemberId) {
-    return res.status(400).json({ error: 'staffMemberId is required' })
-  }
   if (!Array.isArray(answers) || answers.length === 0) {
     return res.status(400).json({ error: 'answers must be a non-empty array' })
   }
@@ -178,18 +175,27 @@ router.post('/:id/submit', async (req, res) => {
     return res.status(400).json({ error: 'timeTakenSeconds must be a non-negative integer' })
   }
 
-  // Validate staff member exists and is STAFF
-  const staff = await prisma.user.findUnique({ where: { id: staffMemberId } })
-  if (!staff || staff.role !== 'STAFF') {
-    return res.status(400).json({ error: 'Invalid staff member' })
-  }
-
-  // Validate senior profile when linked (optional). staffMemberId stays required as today.
+  // Resolve senior first so we can fall back to senior.preferredStaffId when
+  // staffMemberId is omitted. Explicit staffMemberId wins when provided.
   const cleanSeniorId =
     typeof seniorProfileId === 'string' ? seniorProfileId.trim() || null : (seniorProfileId ?? null)
+  let senior = null
   if (cleanSeniorId) {
-    const senior = await prisma.seniorProfile.findUnique({ where: { id: cleanSeniorId } })
+    senior = await prisma.seniorProfile.findUnique({ where: { id: cleanSeniorId } })
     if (!senior) return res.status(404).json({ error: 'Senior not found' })
+  }
+
+  const cleanStaffInput =
+    typeof staffMemberId === 'string' ? staffMemberId.trim() || null : (staffMemberId ?? null)
+  const effectiveStaffMemberId = cleanStaffInput || senior?.preferredStaffId || null
+  if (!effectiveStaffMemberId) {
+    return res.status(400).json({ error: 'staffMemberId is required' })
+  }
+
+  // Validate staff member exists and is STAFF
+  const staff = await prisma.user.findUnique({ where: { id: effectiveStaffMemberId } })
+  if (!staff || staff.role !== 'STAFF') {
+    return res.status(400).json({ error: 'Invalid staff member' })
   }
 
   const module = await prisma.module.findFirst({
@@ -205,7 +211,7 @@ router.post('/:id/submit', async (req, res) => {
 
   // Check assignment exists (staff must be assigned this module)
   const assignment = await prisma.staffModuleAssignment.findUnique({
-    where: { staffId_moduleId: { staffId: staffMemberId, moduleId: module.id } },
+    where: { staffId_moduleId: { staffId: effectiveStaffMemberId, moduleId: module.id } },
   })
   if (!assignment) {
     return res.status(400).json({ error: 'This module is not assigned to the selected staff member' })
@@ -218,7 +224,7 @@ router.post('/:id/submit', async (req, res) => {
     const submission = await tx.submission.create({
       data: {
         moduleId: module.id,
-        staffMemberId,
+        staffMemberId: effectiveStaffMemberId,
         takerName: takerName.trim(),
         takerEmail: '',
         seniorProfileId: cleanSeniorId,
@@ -240,9 +246,9 @@ router.post('/:id/submit', async (req, res) => {
     let completion = null
     if (passed) {
       completion = await tx.staffModuleCompletion.upsert({
-        where: { staffId_moduleId: { staffId: staffMemberId, moduleId: module.id } },
+        where: { staffId_moduleId: { staffId: effectiveStaffMemberId, moduleId: module.id } },
         create: {
-          staffId: staffMemberId,
+          staffId: effectiveStaffMemberId,
           moduleId: module.id,
           submissionId: submission.id,
           score,
@@ -268,7 +274,7 @@ router.post('/:id/submit', async (req, res) => {
     submissionId: result.submission.id,
     moduleTitle: module.title,
     takerName: result.submission.takerName,
-    staffMemberId,
+    staffMemberId: effectiveStaffMemberId,
     seniorProfileId: result.submission.seniorProfileId,
     score,
     total,

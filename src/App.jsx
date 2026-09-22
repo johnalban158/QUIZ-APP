@@ -1,5 +1,5 @@
 import { Routes, Route, Navigate } from 'react-router-dom'
-import Landing from './pages/Landing'
+import RoleSelect from './pages/auth/RoleSelect'
 import AdminLogin from './pages/admin/AdminLogin'
 import AdminLayout from './pages/admin/AdminLayout'
 import Modules from './pages/admin/Modules'
@@ -19,7 +19,7 @@ import StaffModule from './pages/staff/StaffModule'
 export default function App() {
   return (
     <Routes>
-      <Route path="/" element={<Landing />} />
+      <Route path="/" element={<RoleSelect />} />
       <Route path="/admin/login" element={<AdminLogin />} />
       <Route path="/admin" element={<AdminLayout />}>
         <Route index element={<Navigate to="/admin/modules" replace />} />
@@ -38,7 +38,7 @@ export default function App() {
         <Route index element={<StaffHome />} />
         <Route path="modules/:id" element={<StaffModule />} />
       </Route>
-      <Route path="*" element={<Landing />} />
+      <Route path="*" element={<RoleSelect />} />
     </Routes>
   )
 }

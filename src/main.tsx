@@ -19,7 +19,7 @@ if (savedFontScale === 'large') {
   document.documentElement.dataset.fontScale = 'large'
 }
 
-document.title = 'KAN A NI PLEASE'
+document.title = 'Goodwill Caring Health Services'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

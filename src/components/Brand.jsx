@@ -40,12 +40,12 @@ export default function Brand({ right, back, backLabel }) {
           </Link>
         ) : null}
 
-        <Link to="/" className="brand-logo" aria-label="KAN A NI PLEASE home">
+        <Link to="/" className="brand-logo" aria-label="Goodwill Caring Health Services home">
           <GraduationCap size={24} strokeWidth={2.5} />
         </Link>
 
         <Link to="/" className="brand-name">
-          KAN A&nbsp;NI <span className="brand-accent">PLEASE</span>
+          Goodwill Caring Health Services
         </Link>
 
         <nav className="nav-links" aria-label="Primary">

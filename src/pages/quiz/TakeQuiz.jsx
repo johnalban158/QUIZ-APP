@@ -26,6 +26,8 @@ export default function TakeQuiz() {
   const [seniorsReload, setSeniorsReload] = useState(0)
   const [newSeniorId, setNewSeniorId] = useState(null)
   const [starting, setStarting] = useState(false)
+  const [autoStaffId, setAutoStaffId] = useState('')
+  const startTimerRef = useRef(null)
   const loadedSeniorsRef = useRef(false)
   const [staffId, setStaffId] = useState('')
   const [started, setStarted] = useState(false)
@@ -94,6 +96,15 @@ export default function TakeQuiz() {
     return () => window.removeEventListener('beforeunload', handler)
   }, [inProgress])
 
+  useEffect(() => {
+    return () => {
+      if (startTimerRef.current) {
+        clearTimeout(startTimerRef.current)
+        startTimerRef.current = null
+      }
+    }
+  }, [])
+
   const selectOption = (questionId, optionId) => {
     setAnswers((prev) => ({ ...prev, [questionId]: optionId }))
   }
@@ -104,25 +115,55 @@ export default function TakeQuiz() {
     setSeniorsReload((k) => k + 1)
   }
 
+  const clearAutoStart = () => {
+    if (startTimerRef.current) {
+      clearTimeout(startTimerRef.current)
+      startTimerRef.current = null
+    }
+  }
+
+  const pickStaff = (s) => {
+    clearAutoStart()
+    setAutoStaffId('')
+    setStaffId(s.id)
+  }
+
   const pickSenior = (s) => {
+    clearAutoStart()
     setSeniorMode('saved')
     setSelectedSenior(s)
     setSeniorNote('')
     setName(s.name)
-    if (s.preferredStaffId && staffList.some((st) => st.id === s.preferredStaffId)) {
-      setStaffId(s.preferredStaffId)
+    const preferred =
+      s.preferredStaffId && staffList.some((st) => st.id === s.preferredStaffId)
+        ? s.preferredStaffId
+        : ''
+    if (preferred && (!staffId || staffId === preferred)) {
+      setAutoStaffId(preferred)
+      setStaffId(preferred)
+      startTimerRef.current = setTimeout(() => {
+        startTimerRef.current = null
+        setStarted(true)
+        setStartedAt((prev) => prev ?? Date.now())
+      }, 1500)
+    } else {
+      setAutoStaffId('')
     }
   }
 
   const chooseNew = () => {
+    clearAutoStart()
     setSeniorMode('new')
     setSelectedSenior(null)
+    setAutoStaffId('')
     setName('')
   }
 
   const resetSenior = () => {
+    clearAutoStart()
     setSeniorMode('saved')
     setSelectedSenior(null)
+    setAutoStaffId('')
     setSeniorNote('')
     setName('')
   }
@@ -162,6 +203,9 @@ export default function TakeQuiz() {
   const q = questions[current]
   const progressPct = total ? Math.round(((current + 1) / total) * 100) : 0
   const staffName = staffList.find((s) => s.id === staffId)
+  const autoCreditName = autoStaffId
+    ? (staffList.find((s) => s.id === autoStaffId)?.name ?? selectedSenior?.preferredStaff?.name ?? '')
+    : ''
 
   if (total === 0) {
     return (
@@ -398,38 +442,49 @@ export default function TakeQuiz() {
                             <button className="btn btn-ghost btn-sm" type="button" onClick={resetSenior}>
                               <X size={16} /> Choose nobody
                             </button>
+                            {autoStaffId && autoCreditName && (
+                              <div className="staff-credit-note" role="status" aria-live="polite">
+                                <UserRound size={20} />
+                                <span className="staff-credit-text">
+                                  Quiz will be credited to <strong>{autoCreditName}</strong>
+                                </span>
+                                <ReadAloud text={`Quiz will be credited to ${autoCreditName}.`} />
+                              </div>
+                            )}
                           </div>
                         )}
                       </>
                     )}
                   </div>
 
-                  <div className="field">
-                    <label><UserRound size={16} /> Who is assisting you? <span className="req">*</span></label>
-                    <div className="staff-pick" role="radiogroup" aria-label="Who is assisting you">
-                      {staffList.map((s) => {
-                        const selected = staffId === s.id
-                        return (
-                          <button
-                            key={s.id}
-                            type="button"
-                            role="radio"
-                            aria-checked={selected}
-                            className={`staff-pick-card${selected ? ' selected' : ''}`}
-                            onClick={() => setStaffId(s.id)}
-                          >
-                            <span className="staff-pick-avatar">{(s.name || '?')[0].toUpperCase()}</span>
-                            <span>
-                              <span className="staff-pick-name">{s.name}</span>
-                              <span className="staff-pick-spec">{specialtyLabel(s.specialty)}</span>
-                            </span>
-                            <span className="staff-pick-check">{selected && <Check size={16} strokeWidth={3} />}</span>
-                          </button>
-                        )
-                      })}
+                  {!autoStaffId && (
+                    <div className="field">
+                      <label><UserRound size={16} /> Who is assisting you? <span className="req">*</span></label>
+                      <div className="staff-pick" role="radiogroup" aria-label="Who is assisting you">
+                        {staffList.map((s) => {
+                          const selected = staffId === s.id
+                          return (
+                            <button
+                              key={s.id}
+                              type="button"
+                              role="radio"
+                              aria-checked={selected}
+                              className={`staff-pick-card${selected ? ' selected' : ''}`}
+                              onClick={() => pickStaff(s)}
+                            >
+                              <span className="staff-pick-avatar">{(s.name || '?')[0].toUpperCase()}</span>
+                              <span>
+                                <span className="staff-pick-name">{s.name}</span>
+                                <span className="staff-pick-spec">{specialtyLabel(s.specialty)}</span>
+                              </span>
+                              <span className="staff-pick-check">{selected && <Check size={16} strokeWidth={3} />}</span>
+                            </button>
+                          )
+                        })}
+                      </div>
+                      <p className="form-hint">Your result counts toward this staff member's training plan.</p>
                     </div>
-                    <p className="form-hint">Your result counts toward this staff member's training plan.</p>
-                  </div>
+                  )}
                 </>
               )}
             </div>
