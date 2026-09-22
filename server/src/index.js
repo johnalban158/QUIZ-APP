@@ -9,6 +9,8 @@ import submissionRoutes from './routes/submissions.js'
 import quizRoutes from './routes/quiz.js'
 import statsRoutes from './routes/stats.js'
 import { adminRouter as staffAdminRouter, selfRouter as staffSelfRouter } from './routes/staff.js'
+import residentsRouter from './routes/admin/residents.js'
+import { requireAdmin } from './middleware/auth.js'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -40,6 +42,7 @@ app.use('/api/admin/modules', moduleRoutes)
 app.use('/api/admin/submissions', submissionRoutes)
 app.use('/api/admin/stats', statsRoutes)
 app.use('/api/admin/staff', staffAdminRouter)
+app.use('/api/admin/residents', requireAdmin, residentsRouter)
 app.use('/api/staff', staffSelfRouter)
 app.use('/api/quiz', quizRoutes)
 

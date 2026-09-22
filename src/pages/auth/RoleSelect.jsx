@@ -2,26 +2,27 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ArrowRight, Shield, UserCog, Users } from 'lucide-react'
 import Brand from '../../components/Brand'
+import BlobField from '../../assets/illustrations/BlobField'
 
 const ROLES = [
   {
     key: 'resident',
     label: 'Resident',
-    sub: 'Play a quiz',
+    sub: 'Take a quiz with a little help',
     icon: Users,
     to: '/quiz',
   },
   {
     key: 'staff',
     label: 'Staff',
-    sub: 'Run a quiz session',
+    sub: 'Run a quiz session and earn training credit',
     icon: UserCog,
     to: '/staff/login',
   },
   {
     key: 'admin',
     label: 'Admin',
-    sub: 'Manage quizzes and modules',
+    sub: 'Manage quizzes, modules and staff',
     icon: Shield,
     to: '/admin/login',
   },
@@ -36,6 +37,9 @@ export default function RoleSelect() {
   return (
     <>
       <Brand />
+      <div className="stage-decor" aria-hidden="true">
+        <BlobField />
+      </div>
       <div className="role-select">
         <section className="card role-card-head">
           <p className="eyebrow">Goodwill Caring Health Services</p>

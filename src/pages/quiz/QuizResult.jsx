@@ -1,6 +1,7 @@
 import { useLocation, useNavigate, useParams, Link } from 'react-router-dom'
 import { Award, CheckCircle, LayoutList, RotateCcw, Trophy, XCircle } from 'lucide-react'
 import Brand from '../../components/Brand'
+import CelebrationBlobs from '../../assets/illustrations/CelebrationBlobs'
 import { useAuth } from '../../context/AuthContext'
 
 export default function QuizResult() {
@@ -50,6 +51,9 @@ export default function QuizResult() {
   return (
     <>
       <Brand back="/quiz" backLabel="All quizzes" right={takerName} />
+      <div className="stage-decor" aria-hidden="true">
+        <CelebrationBlobs />
+      </div>
       <div className="quiz-shell">
         <div className="card result-card">
           <div
@@ -103,7 +107,7 @@ export default function QuizResult() {
                 <LayoutList size={18} /> All quizzes
               </button>
             )}
-            <button className="btn btn-ghost" onClick={() => navigate(`/quiz/${id}`)}>
+            <button className="btn btn-orange" onClick={() => navigate(`/quiz/${id}`)}>
               <RotateCcw size={18} /> Try again
             </button>
           </div>

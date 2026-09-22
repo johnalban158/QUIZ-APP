@@ -3,6 +3,7 @@ import { useNavigate, Navigate } from 'react-router-dom'
 import { Lock, Mail, UserRound } from 'lucide-react'
 import { useAuth } from '../../context/AuthContext'
 import Brand from '../../components/Brand'
+import LoginOrbs from '../../assets/illustrations/LoginOrbs'
 
 export default function StaffLogin() {
   const navigate = useNavigate()
@@ -12,7 +13,7 @@ export default function StaffLogin() {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
-  if (user?.role === 'STAFF') return <Navigate to="/staff" replace />
+  if (user?.role === 'STAFF') return <Navigate to="/staff/dashboard" replace />
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -24,7 +25,7 @@ export default function StaffLogin() {
         setError('That account is not a staff member.')
         return
       }
-      navigate('/staff')
+      navigate('/staff/dashboard')
     } catch (err) {
       setError(err.message || 'Login failed')
     } finally {
@@ -35,6 +36,9 @@ export default function StaffLogin() {
   return (
     <>
       <Brand back="/" backLabel="Back to home" />
+      <div className="stage-decor" aria-hidden="true">
+        <LoginOrbs />
+      </div>
       <div className="login-page">
         <form className="card login-card" onSubmit={handleSubmit}>
           <div className="login-logo"><UserRound size={26} /></div>

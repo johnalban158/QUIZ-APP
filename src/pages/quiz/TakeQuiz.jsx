@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState } from 'react'
 import { flushSync } from 'react-dom'
-import { useParams, useNavigate, useBlocker } from 'react-router-dom'
+import { useParams, useNavigate, useBlocker, useSearchParams } from 'react-router-dom'
 import { ArrowLeft, ArrowRight, BookOpen, Check, FileQuestion, Search, Send, StickyNote, Timer, UserRound, UserRoundPlus, UsersRound, WifiOff, X } from 'lucide-react'
 import Brand from '../../components/Brand'
 import ReadAloud from '../../components/ReadAloud'
+import QuizFloaties from '../../assets/illustrations/QuizFloaties'
 import { useAuth } from '../../context/AuthContext'
 import { specialtyLabel } from '../../lib'
 import { api } from '../../api'
@@ -11,7 +12,11 @@ import { api } from '../../api'
 export default function TakeQuiz() {
   const { id } = useParams()
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
   const { user } = useAuth()
+  const presetResidentId = searchParams.get('resident') || ''
+  const presetStaffId = searchParams.get('staff') || ''
+  const presetName = searchParams.get('name') || ''
   const [quiz, setQuiz] = useState(null)
   const [staffList, setStaffList] = useState([])
   const [error, setError] = useState('')
@@ -29,6 +34,7 @@ export default function TakeQuiz() {
   const [autoStaffId, setAutoStaffId] = useState('')
   const startTimerRef = useRef(null)
   const loadedSeniorsRef = useRef(false)
+  const presetAppliedRef = useRef(false)
   const [staffId, setStaffId] = useState('')
   const [started, setStarted] = useState(false)
   const [startedAt, setStartedAt] = useState(null)
@@ -38,7 +44,7 @@ export default function TakeQuiz() {
   const [submitting, setSubmitting] = useState(false)
   const [confirmSubmit, setConfirmSubmit] = useState(false)
 
-  const isStaff = user?.role === 'STAFF'
+  const isStaff = user?.role === 'STAFF' && !presetResidentId
 
   const answeredCount = Object.keys(answers).length
   const inProgress = started && answeredCount > 0 && !submitted
@@ -56,11 +62,18 @@ export default function TakeQuiz() {
         setQuiz(quizData)
         setStaffList(Array.isArray(staffData) ? staffData : [])
         if (user?.role === 'STAFF' && user.id) setStaffId(user.id)
+        if (
+          presetStaffId &&
+          Array.isArray(staffData) &&
+          staffData.some((s) => s.id === presetStaffId)
+        ) {
+          setStaffId(presetStaffId)
+        }
       } catch (err) {
         setError(err.message)
       }
     })()
-  }, [id, user])
+  }, [id, user, presetStaffId])
 
   useEffect(() => {
     if (isStaff) return undefined
@@ -74,6 +87,19 @@ export default function TakeQuiz() {
         loadedSeniorsRef.current = true
         setSeniorsStatus('ok')
         setSeniorsError('')
+        if (!presetAppliedRef.current && presetResidentId) {
+          presetAppliedRef.current = true
+          const match = (Array.isArray(data) ? data : []).find((s) => s.id === presetResidentId)
+          if (match) {
+            setSeniorMode('saved')
+            setSelectedSenior(match)
+            setName(match.name)
+            const preferred = match.preferredStaffId || presetStaffId
+            if (preferred) setStaffId(preferred)
+          } else if (presetName) {
+            setName(presetName)
+          }
+        }
       } catch (err) {
         if (!alive) return
         setSeniorsError(err.message)
@@ -84,7 +110,7 @@ export default function TakeQuiz() {
       alive = false
       clearTimeout(timer)
     }
-  }, [seniorSearch, isStaff, seniorsReload])
+  }, [seniorSearch, isStaff, seniorsReload, presetResidentId, presetName, presetStaffId])
 
   useEffect(() => {
     if (!inProgress) return undefined
@@ -289,6 +315,9 @@ export default function TakeQuiz() {
     return (
       <>
         <Brand back="/quiz" backLabel="Back to quizzes" right={`${total} questions`} />
+        <div className="stage-decor" aria-hidden="true">
+          <QuizFloaties />
+        </div>
         <div className="quiz-shell">
           <div className="card quiz-intro">
             <span className="quiz-intro-icon"><FileQuestion size={30} /></span>
@@ -490,7 +519,7 @@ export default function TakeQuiz() {
             </div>
 
             <button
-              className="btn btn-primary btn-lg btn-block"
+              className="btn btn-orange btn-lg btn-block"
               disabled={!name.trim() || (isStaff ? false : !staffId) || starting}
               onClick={startQuiz}
             >
@@ -569,7 +598,7 @@ export default function TakeQuiz() {
           </button>
           {current === total - 1 ? (
             <button
-              className="btn btn-primary"
+              className="btn btn-orange"
               onClick={() => setConfirmSubmit(true)}
               disabled={submitting || answeredCount < total}
             >
@@ -599,7 +628,7 @@ export default function TakeQuiz() {
             <div className="modal-actions">
               <button className="btn btn-ghost btn-lg" onClick={() => setConfirmSubmit(false)}>Review answers</button>
               <button
-                className="btn btn-primary btn-lg"
+                className="btn btn-orange btn-lg"
                 disabled={submitting}
                 onClick={() => {
                   setConfirmSubmit(false)

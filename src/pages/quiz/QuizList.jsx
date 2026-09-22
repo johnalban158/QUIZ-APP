@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { ArrowRight, FileQuestion, Inbox, WifiOff } from 'lucide-react'
 import Brand from '../../components/Brand'
 import { api } from '../../api'
 
 export default function QuizList() {
   const navigate = useNavigate()
+  const location = useLocation()
   const [quizzes, setQuizzes] = useState(null)
   const [error, setError] = useState('')
   const [reloadKey, setReloadKey] = useState(0)
@@ -72,7 +73,7 @@ export default function QuizList() {
             {quizzes.map((q) => {
               const count = q._count?.questions ?? 0
               return (
-                <button key={q.id} type="button" className="quiz-card" onClick={() => navigate(`/quiz/${q.id}`)}>
+                <button key={q.id} type="button" className="quiz-card" onClick={() => navigate(`/quiz/${q.id}${location.search}`)}>
                   <span className="quiz-card-top">
                     <span className="quiz-card-icon"><FileQuestion size={24} /></span>
                     <span className="badge badge-soft">{count} question{count === 1 ? '' : 's'}</span>

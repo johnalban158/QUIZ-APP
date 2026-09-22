@@ -1,63 +1,89 @@
-@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap');
-
 /* =====================================================================
-   Design tokens — light WHITE is the default (senior-friendly)
-   High contrast, roomier type, calm indigo-blue accent.
+   Design tokens — MINT & SKY (light is the default, senior-friendly)
+   Calm teal accent, warm orange CTA, navy ink on a soft mint-to-sky
+   gradient. High contrast, roomy type, generous touch targets.
+   Fonts (Fraunces + Work Sans) are loaded via <link> in index.html.
    ===================================================================== */
 :root {
   color-scheme: light;
+  /* Backdrop — soft mint to sky gradient */
+  --bg-grad-1: #eaf7f1;
+  --bg-grad-2: #dcf0f6;
+  --bg: #eef6f3;
   /* Surfaces */
-  --bg: #ffffff;
   --surface: #ffffff;
-  --surface-2: #f4f6fa;
-  --border: #cbd2e0;
-  /* Text — high contrast on white (WCAG AA+) */
-  --ink: #12141d;
-  --ink-2: #3c4256;
-  --muted: #535a70;
-  /* Accent — deep friendly indigo-blue that passes AA on white */
-  --accent: #3e43d8;
-  --accent-2: #3034bd;
-  --accent-soft: #eceefd;
-  /* Status — deep enough to pass AA; always paired with icons in UI */
-  --ok: #0b7a4b;
-  --ok-soft: #e2f5eb;
-  --bad: #c2253c;
-  --bad-soft: #fce9ec;
-  --warn: #94580a;
-  --warn-soft: #faf0dc;
+  --surface-2: #f0f7f4;
+  --border: #cfe8ed;
+  --border-soft: rgba(28, 58, 82, 0.08);
+  /* Text — navy (WCAG AA on white & the soft gradient) */
+  --ink: #1c3a52;
+  --ink-2: #2e4d63;
+  --muted: #4f6b7f;
+  --placeholder: #52718a;
+  /* Accent — teal */
+  --accent: #2c9c8c;
+  --accent-2: #1f7266;
+  --accent-soft: #e6f4f1;
+  --accent-soft-2: #d5eee9;
+  --focus-ring: rgba(44, 156, 140, 0.3);
+  /* Solid fill tones (buttons/logos) — deep enough for white text */
+  --accent-fill: #2c9c8c;
+  --accent-fill-2: #1f7266;
+  /* CTA — orange (paired with navy text for AA) */
+  --cta: #e8792f;
+  --cta-2: #f4a15f;
+  --cta-soft: #fdf0e4;
+  /* Status — deep enough to pass AA; always paired with icons */
+  --ok: #129963;
+  --ok-soft: #e3f6ec;
+  --bad: #d9485e;
+  --bad-soft: #fdecef;
+  --warn: #b3641a;
+  --warn-soft: #fbefdb;
   /* Type */
-  --serif: 'Fraunces', Georgia, serif;
-  --sans: 'Inter', system-ui, -apple-system, sans-serif;
-  /* Depth */
-  --shadow: 0 1px 2px rgba(18, 20, 29, 0.05), 0 10px 28px rgba(18, 20, 29, 0.07);
-  --shadow-md: 0 2px 6px rgba(18, 20, 29, 0.06), 0 18px 40px rgba(18, 20, 29, 0.1);
-  --shadow-lg: 0 4px 10px rgba(18, 20, 29, 0.07), 0 26px 52px rgba(18, 20, 29, 0.13);
-  --glass: rgba(255, 255, 255, 0.92);
+  --serif: 'Fraunces', Georgia, 'Times New Roman', serif;
+  --sans: 'Work Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  /* Depth — whisper shadows only */
+  --shadow: 0 2px 8px rgba(28, 58, 82, 0.04);
+  --shadow-md: 0 6px 20px rgba(28, 58, 82, 0.07);
+  --shadow-lg: 0 12px 32px rgba(28, 58, 82, 0.1);
+  --glass: rgba(255, 255, 255, 0.9);
 }
 
+/* .dark — a subtle deep-navy variant (not the primary experience) */
 .dark {
   color-scheme: dark;
-  --bg: #0f1117;
-  --surface: #161a24;
-  --surface-2: #1d2130;
-  --border: #38405c;
-  --ink: #f3f4f9;
-  --ink-2: #b3bacf;
-  --muted: #7d85a0;
-  --accent: #8e91fb;
-  --accent-2: #7a7df6;
-  --accent-soft: #262a52;
-  --ok: #3dd08e;
-  --ok-soft: #102e25;
-  --bad: #f27484;
-  --bad-soft: #3a1f29;
-  --warn: #efb64a;
-  --warn-soft: #332a10;
-  --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 8px 24px rgba(0, 0, 0, 0.35);
-  --shadow-md: 0 2px 6px rgba(0, 0, 0, 0.35), 0 16px 36px rgba(0, 0, 0, 0.5);
-  --shadow-lg: 0 4px 10px rgba(0, 0, 0, 0.4), 0 24px 48px rgba(0, 0, 0, 0.55);
-  --glass: rgba(15, 17, 23, 0.86);
+  --bg-grad-1: #12222e;
+  --bg-grad-2: #16303d;
+  --bg: #12222e;
+  --surface: #1a2e3a;
+  --surface-2: #214054;
+  --border: #35505f;
+  --border-soft: rgba(178, 214, 226, 0.14);
+  --ink: #eef6f9;
+  --ink-2: #c3d5dd;
+  --muted: #8ba6b3;
+  --placeholder: #9db4c0;
+  --accent: #4fd0bd;
+  --accent-2: #7ce0d1;
+  --accent-soft: #1d3a40;
+  --accent-soft-2: #27494f;
+  --focus-ring: rgba(79, 208, 189, 0.35);
+  --accent-fill: #237e72;
+  --accent-fill-2: #1a6158;
+  --cta: #f5a05e;
+  --cta-2: #ffb97f;
+  --cta-soft: #3d2c1e;
+  --ok: #4dd695;
+  --ok-soft: #123327;
+  --bad: #f48592;
+  --bad-soft: #3d2027;
+  --warn: #f2b65c;
+  --warn-soft: #3a2c12;
+  --shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 6px 20px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.5);
+  --glass: rgba(18, 34, 46, 0.88);
 }
 
 /* =====================================================================
@@ -85,23 +111,13 @@ body,
 
 body {
   margin: 0;
-  background:
-    radial-gradient(1100px 500px at 85% -10%, rgba(62, 67, 216, 0.05), transparent 60%),
-    radial-gradient(900px 500px at -10% 110%, rgba(62, 67, 216, 0.04), transparent 60%),
-    var(--bg);
+  background: linear-gradient(135deg, var(--bg-grad-1) 0%, var(--bg-grad-2) 100%);
   background-attachment: fixed;
   color: var(--ink);
   font-family: var(--sans);
   font-size: 1.0625rem;
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
-}
-
-.dark body {
-  background:
-    radial-gradient(1100px 500px at 85% -10%, rgba(99, 102, 241, 0.16), transparent 60%),
-    radial-gradient(900px 500px at -10% 110%, rgba(99, 102, 241, 0.12), transparent 60%),
-    var(--bg);
 }
 
 h1,

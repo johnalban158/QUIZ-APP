@@ -3,6 +3,7 @@ import { useNavigate, Navigate } from 'react-router-dom'
 import { Info, Lock, Mail, ShieldCheck } from 'lucide-react'
 import { useAuth } from '../../context/AuthContext'
 import Brand from '../../components/Brand'
+import LoginOrbs from '../../assets/illustrations/LoginOrbs'
 
 export default function AdminLogin() {
   const navigate = useNavigate()
@@ -35,6 +36,9 @@ export default function AdminLogin() {
   return (
     <>
       <Brand back="/" backLabel="Back to home" />
+      <div className="stage-decor" aria-hidden="true">
+        <LoginOrbs />
+      </div>
       <div className="login-page">
         <form className="card login-card" onSubmit={handleSubmit}>
           <div className="login-logo"><ShieldCheck size={26} /></div>

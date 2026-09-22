@@ -302,6 +302,71 @@ adminRouter.post('/bulk-assign', async (req, res) => {
 
 // ===== SELF-SERVICE ROUTES =====
 
+// GET /api/staff/me/residents - Residents assigned to this staff member
+// Returns SeniorProfile[] where preferredStaffId = me
+selfRouter.get('/me/residents', async (req, res) => {
+  const residents = await prisma.seniorProfile.findMany({
+    where: { preferredStaffId: req.user.id },
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      notes: true,
+      createdAt: true,
+      updatedAt: true,
+      _count: { select: { submissions: true } },
+    },
+    orderBy: { name: 'asc' },
+  })
+  res.json({ residents })
+})
+
+// GET /api/staff/me/modules - Module assignments with completion status
+selfRouter.get('/me/modules', async (req, res) => {
+  const assignments = await prisma.staffModuleAssignment.findMany({
+    where: { staffId: req.user.id },
+    include: {
+      module: { select: { id: true, title: true, description: true } },
+      completion: { select: { score: true, total: true, percent: true, passed: true, completedAt: true } },
+    },
+    orderBy: { assignedAt: 'desc' },
+  })
+
+  // Find which modules have at least one attempt (submission) so we can
+  // distinguish NOT_STARTED from IN_PROGRESS (completions are only
+  // recorded on pass, so a failed attempt leaves a Submission but no completion).
+  const moduleIds = assignments.map((a) => a.moduleId)
+  const attempted = new Set()
+  if (moduleIds.length > 0) {
+    const submissions = await prisma.submission.findMany({
+      where: { staffMemberId: req.user.id, moduleId: { in: moduleIds } },
+      select: { moduleId: true },
+    })
+    submissions.forEach((s) => attempted.add(s.moduleId))
+  }
+
+  const modules = assignments.map((a) => {
+    let status
+    if (a.completion) {
+      status = a.completion.passed ? 'PASSED' : 'FAILED'
+    } else if (attempted.has(a.moduleId)) {
+      status = 'IN_PROGRESS'
+    } else {
+      status = 'NOT_STARTED'
+    }
+    return {
+      id: a.id,
+      moduleId: a.module.id,
+      module: a.module,
+      assignedAt: a.assignedAt,
+      completion: a.completion ?? null,
+      status,
+    }
+  })
+
+  res.json({ modules })
+})
+
 // GET /api/staff/me - Own training plan
 selfRouter.get('/me', async (req, res) => {
   const staff = await prisma.user.findUnique({
@@ -325,9 +390,25 @@ selfRouter.get('/me', async (req, res) => {
 
   const progressPercent = totalEligibleModules > 0 ? Math.round((completedModules / totalEligibleModules) * 100) : 0
 
+  const completions = await prisma.staffModuleCompletion.findMany({
+    where: { staffId: staff.id },
+    select: {
+      moduleId: true,
+      submissionId: true,
+      score: true,
+      total: true,
+      percent: true,
+      passed: true,
+      completedAt: true,
+      module: { select: { id: true, title: true } },
+    },
+    orderBy: { completedAt: 'desc' },
+  })
+
   res.json({
     ...staff,
     assignments,
+    completions,
     assignedModules,
     completedModules,
     totalEligibleModules,
