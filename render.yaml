@@ -25,7 +25,7 @@ services:
     name: quiz-app-backend
     runtime: node
     rootDir: server
-    buildCommand: npm ci && npx prisma generate
+    buildCommand: npm ci && npx prisma generate && npx prisma db push
     startCommand: node src/index.js
     envVars:
       - key: NODE_ENV
@@ -44,14 +44,8 @@ services:
     previews:
       generation: automatic
 
-  # 3. Database — PostgreSQL
-  - type: pserv
-    name: quiz-app-db
-    runtime: postgresql
-    plan: free
-    previews:
-      generation: automatic
-
 databases:
   - name: quiz-app-db
     plan: free
+    databaseName: quizapp
+    user: quizapp
