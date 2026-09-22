@@ -43,6 +43,9 @@ app.use('/api/admin/staff', staffAdminRouter)
 app.use('/api/staff', staffSelfRouter)
 app.use('/api/quiz', quizRoutes)
 
+// Unknown /api/* -> always JSON 404 (never HTML, so fetch().json() won't choke on <!DOCTYPE...>)
+app.use('/api', (req, res) => res.status(404).json({ error: 'Not found' }))
+
 app.use((err, _req, res, _next) => {
   console.error(err)
   // Handle multer errors

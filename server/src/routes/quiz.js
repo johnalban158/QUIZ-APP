@@ -13,6 +13,85 @@ router.get('/staff-list', async (req, res) => {
   res.json(staff)
 })
 
+// GET /api/quiz/seniors - Public list of saved senior profiles
+// NOTE: must stay BEFORE router.get('/:id') or "seniors" is treated as :id
+router.get('/seniors', async (req, res) => {
+  const { search, staffId } = req.query ?? {}
+  const where = {}
+  if (typeof search === 'string' && search.trim()) {
+    where.name = { contains: search.trim(), mode: 'insensitive' }
+  }
+  if (typeof staffId === 'string' && staffId.trim()) {
+    where.preferredStaffId = staffId.trim()
+  }
+  const seniors = await prisma.seniorProfile.findMany({
+    where,
+    orderBy: { updatedAt: 'desc' },
+    take: 50,
+    include: {
+      preferredStaff: { select: { id: true, name: true, specialty: true } },
+      _count: { select: { submissions: true } },
+    },
+  })
+  res.json(
+    seniors.map((s) => ({
+      id: s.id,
+      name: s.name,
+      email: s.email,
+      preferredStaffId: s.preferredStaffId,
+      preferredStaff: s.preferredStaff,
+      notes: s.notes,
+      createdAt: s.createdAt,
+      updatedAt: s.updatedAt,
+      submissionCount: s._count.submissions,
+    }))
+  )
+})
+
+// POST /api/quiz/seniors - Save a senior profile (public, staff-assisted flow)
+router.post('/seniors', async (req, res) => {
+  const { name, preferredStaffId, email, notes } = req.body ?? {}
+  if (!name || !String(name).trim()) {
+    return res.status(400).json({ error: 'Name is required' })
+  }
+  const cleanStaffId =
+    typeof preferredStaffId === 'string' ? preferredStaffId.trim() || null : (preferredStaffId ?? null)
+  if (cleanStaffId) {
+    const staff = await prisma.user.findUnique({ where: { id: cleanStaffId } })
+    if (!staff || staff.role !== 'STAFF') {
+      return res.status(400).json({ error: 'Invalid staff member' })
+    }
+  }
+  const cleanEmail = typeof email === 'string' ? email.trim() || null : (email ?? null)
+  const cleanNotes = typeof notes === 'string' ? notes.trim() || null : (notes ?? null)
+  try {
+    const senior = await prisma.seniorProfile.create({
+      data: {
+        name: String(name).trim(),
+        preferredStaffId: cleanStaffId,
+        email: cleanEmail,
+        notes: cleanNotes,
+      },
+      include: { preferredStaff: { select: { id: true, name: true, specialty: true } } },
+    })
+    res.status(201).json({
+      id: senior.id,
+      name: senior.name,
+      email: senior.email,
+      preferredStaffId: senior.preferredStaffId,
+      preferredStaff: senior.preferredStaff,
+      notes: senior.notes,
+      createdAt: senior.createdAt,
+      updatedAt: senior.updatedAt,
+    })
+  } catch (e) {
+    if (e?.code === 'P2002') {
+      return res.status(409).json({ error: 'A senior with that email already exists' })
+    }
+    throw e
+  }
+})
+
 router.get('/', async (req, res) => {
   const modules = await prisma.module.findMany({
     where: { status: 'PUBLISHED' },
@@ -85,7 +164,7 @@ async function gradeModule(module, answers) {
 }
 
 router.post('/:id/submit', async (req, res) => {
-  const { takerName, staffMemberId, answers, timeTakenSeconds } = req.body ?? {}
+  const { takerName, staffMemberId, answers, timeTakenSeconds, seniorProfileId } = req.body ?? {}
   if (!takerName || !takerName.trim()) {
     return res.status(400).json({ error: 'Name is required' })
   }
@@ -103,6 +182,14 @@ router.post('/:id/submit', async (req, res) => {
   const staff = await prisma.user.findUnique({ where: { id: staffMemberId } })
   if (!staff || staff.role !== 'STAFF') {
     return res.status(400).json({ error: 'Invalid staff member' })
+  }
+
+  // Validate senior profile when linked (optional). staffMemberId stays required as today.
+  const cleanSeniorId =
+    typeof seniorProfileId === 'string' ? seniorProfileId.trim() || null : (seniorProfileId ?? null)
+  if (cleanSeniorId) {
+    const senior = await prisma.seniorProfile.findUnique({ where: { id: cleanSeniorId } })
+    if (!senior) return res.status(404).json({ error: 'Senior not found' })
   }
 
   const module = await prisma.module.findFirst({
@@ -134,12 +221,21 @@ router.post('/:id/submit', async (req, res) => {
         staffMemberId,
         takerName: takerName.trim(),
         takerEmail: '',
+        seniorProfileId: cleanSeniorId,
         score,
         total,
         timeTakenSeconds: timeTakenSeconds ?? null,
         answers: { create: answerLines },
       },
     })
+
+    // Touch the senior so repeat seniors bubble up on GET /seniors (updatedAt desc)
+    if (cleanSeniorId) {
+      await tx.seniorProfile.update({
+        where: { id: cleanSeniorId },
+        data: { updatedAt: new Date() },
+      })
+    }
 
     let completion = null
     if (passed) {
@@ -173,6 +269,7 @@ router.post('/:id/submit', async (req, res) => {
     moduleTitle: module.title,
     takerName: result.submission.takerName,
     staffMemberId,
+    seniorProfileId: result.submission.seniorProfileId,
     score,
     total,
     percent,

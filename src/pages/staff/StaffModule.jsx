@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
 import { ArrowLeft, BookOpen, Play } from 'lucide-react'
 import { api } from '../../api'
+import ReadAloud from '../../components/ReadAloud'
 
 export default function StaffModule() {
   const { id } = useParams()
@@ -58,7 +59,10 @@ export default function StaffModule() {
 
       {mod.content ? (
         <div className="card reading">
-          <p className="eyebrow">Read before you begin</p>
+          <div className="quiz-reading-head">
+            <span><BookOpen size={18} /> Read before you begin</span>
+            <ReadAloud text={[mod.title, mod.description, mod.content].filter(Boolean).join('. ')} />
+          </div>
           <div className="reading-body">{mod.content}</div>
         </div>
       ) : (

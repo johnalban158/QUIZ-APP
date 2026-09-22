@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { BarChart3, BookOpen, GraduationCap, ListChecks, Play, Shield } from 'lucide-react'
 import Brand from '../components/Brand'
+import { api } from '../api'
 
 const FEATURES = [
   {
@@ -27,7 +28,7 @@ export default function Landing() {
   useEffect(() => {
     (async () => {
       try {
-        const data = await fetch('/api/quiz').then((r) => r.json())
+        const data = await api('/quiz')
         if (Array.isArray(data)) setQuizCount(data.length)
       } catch {
         // Api is unavailable — the chip just stays hidden.

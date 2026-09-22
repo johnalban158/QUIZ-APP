@@ -6,13 +6,17 @@ import './index.css'
 import './App.css'
 import App from './App'
 
-// Apply the saved theme before first paint so there is no flash of the wrong theme.
+// Apply the saved preference before first paint so there is no flash.
+// Light white is the default experience (senior-friendly); dark mode is
+// only used when the user explicitly chose it.
 const savedTheme = localStorage.getItem('kanani_theme')
-if (
-  savedTheme === 'dark' ||
-  (!savedTheme && window.matchMedia('(prefers-color-scheme: dark)').matches)
-) {
+if (savedTheme === 'dark') {
   document.documentElement.classList.add('dark')
+}
+
+const savedFontScale = localStorage.getItem('kanani_font_scale')
+if (savedFontScale === 'large') {
+  document.documentElement.dataset.fontScale = 'large'
 }
 
 document.title = 'KAN A NI PLEASE'

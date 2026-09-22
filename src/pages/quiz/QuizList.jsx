@@ -1,25 +1,32 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ArrowRight, FileQuestion, Inbox } from 'lucide-react'
+import { ArrowRight, FileQuestion, Inbox, WifiOff } from 'lucide-react'
 import Brand from '../../components/Brand'
+import { api } from '../../api'
 
 export default function QuizList() {
   const navigate = useNavigate()
   const [quizzes, setQuizzes] = useState(null)
   const [error, setError] = useState('')
+  const [reloadKey, setReloadKey] = useState(0)
+
+  const load = useCallback(async () => {
+    try {
+      setQuizzes(await api('/quiz'))
+    } catch (err) {
+      setError(err.message)
+    }
+  }, [])
 
   useEffect(() => {
-    (async () => {
-      setError('')
-      try {
-        const data = await fetch('/api/quiz').then((r) => r.json())
-        if (data.error) throw new Error(data.error)
-        setQuizzes(data)
-      } catch (err) {
-        setError(err.message)
-      }
-    })()
-  }, [])
+    load()
+  }, [load, reloadKey])
+
+  const retry = () => {
+    setQuizzes(null)
+    setError('')
+    setReloadKey((k) => k + 1)
+  }
 
   return (
     <>
@@ -32,20 +39,31 @@ export default function QuizList() {
             <p className="page-sub">Read the material, then take the quiz. Passing records credit for the staff member assisting you.</p>
           </div>
           {quizzes && quizzes.length > 0 && (
-            <span className="chip"><FileQuestion size={14} /> {quizzes.length} quiz{quizzes.length === 1 ? '' : 'zes'}</span>
+            <span className="chip"><FileQuestion size={16} /> {quizzes.length} quiz{quizzes.length === 1 ? '' : 'zes'}</span>
           )}
         </div>
 
-        {error && <div className="form-error">{error}</div>}
-
-        {quizzes === null ? (
+        {error ? (
+          <div className="card empty" role="alert">
+            <span className="empty-icon"><WifiOff size={26} /></span>
+            <h3>Can't reach the server</h3>
+            <p>
+              Please make sure it's running, then try again.
+              <br />
+              <span className="muted" style={{ fontSize: '0.95rem' }}>{error}</span>
+            </p>
+            <button className="btn btn-primary" onClick={retry} type="button">
+              <ArrowRight size={16} /> Try again
+            </button>
+          </div>
+        ) : quizzes === null ? (
           <div className="loading">
             <span className="spinner" />
             Loading quizzes…
           </div>
         ) : quizzes.length === 0 ? (
           <div className="card empty">
-            <span className="empty-icon"><Inbox size={20} /></span>
+            <span className="empty-icon"><Inbox size={26} /></span>
             <h3>No quizzes published yet</h3>
             <p>The admin hasn't published any modules.</p>
           </div>
@@ -56,14 +74,14 @@ export default function QuizList() {
               return (
                 <button key={q.id} type="button" className="quiz-card" onClick={() => navigate(`/quiz/${q.id}`)}>
                   <span className="quiz-card-top">
-                    <span className="quiz-card-icon"><FileQuestion size={20} /></span>
+                    <span className="quiz-card-icon"><FileQuestion size={24} /></span>
                     <span className="badge badge-soft">{count} question{count === 1 ? '' : 's'}</span>
                   </span>
                   <span className="quiz-card-title">{q.title}</span>
                   {q.description && <span className="quiz-card-desc">{q.description}</span>}
                   <span className="quiz-card-foot">
                     Start quiz
-                    <span className="quiz-card-arrow"><ArrowRight size={14} /></span>
+                    <span className="quiz-card-arrow"><ArrowRight size={16} /></span>
                   </span>
                 </button>
               )

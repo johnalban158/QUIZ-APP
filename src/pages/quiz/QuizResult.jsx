@@ -29,9 +29,19 @@ export default function QuizResult() {
   const passedState = passed === true
   let verdict
   if (passedState) {
-    verdict = { title: 'You passed!', icon: Trophy, color: 'var(--ok)' }
+    verdict = {
+      title: 'You passed!',
+      icon: Trophy,
+      color: 'var(--ok)',
+      message: 'Nice work — this is recorded in your staff member\u2019s training plan.',
+    }
   } else {
-    verdict = { title: 'Keep practicing', icon: Award, color: 'var(--bad)' }
+    verdict = {
+      title: 'Keep practicing',
+      icon: Award,
+      color: 'var(--bad)',
+      message: 'Don\u2019t worry — review the correct answers below and try again when you\u2019re ready.',
+    }
   }
 
   const VerdictIcon = verdict.icon
@@ -55,20 +65,28 @@ export default function QuizResult() {
             </div>
           </div>
 
-          <h2 className={`result-verdict ${passedState ? 'result-pass' : 'result-fail'}`} style={{ color: verdict.color }}>
-            <VerdictIcon size={20} style={{ verticalAlign: -3, marginRight: 6 }} />
+          <h2
+            className={`result-verdict ${passedState ? 'result-pass' : 'result-fail'}`}
+            style={{ color: verdict.color }}
+            aria-live="polite"
+          >
+            <VerdictIcon size={26} style={{ verticalAlign: -4, marginRight: 8 }} />
             {verdict.title}
           </h2>
-          <p className="result-msg">{moduleTitle}</p>
+          <p className="result-summary">
+            You answered {score} out of {total} questions correctly.
+          </p>
+          <p className="result-msg">{verdict.message}</p>
+          <p className="result-msg muted">{moduleTitle}</p>
 
           <div className="result-credit">
             {passedState && completionRecorded ? (
               <span className="badge badge-ok">
-                <CheckCircle size={13} /> Completion recorded for your staff member
+                <CheckCircle size={15} /> Completion recorded for your staff member
               </span>
             ) : !passedState ? (
               <span className="badge badge-bad">
-                <XCircle size={13} /> No credit recorded — a passing score is needed
+                <XCircle size={15} /> No credit recorded — a passing score is needed
               </span>
             ) : (
               <span className="badge badge-draft">Completion pending</span>
@@ -78,15 +96,15 @@ export default function QuizResult() {
           <div className="result-actions">
             {user?.role === 'STAFF' ? (
               <Link to="/staff" className="btn btn-primary">
-                <LayoutList size={16} /> Back to my training
+                <LayoutList size={18} /> Back to my training
               </Link>
             ) : (
               <button className="btn btn-ghost" onClick={() => navigate('/quiz')}>
-                <LayoutList size={16} /> All quizzes
+                <LayoutList size={18} /> All quizzes
               </button>
             )}
             <button className="btn btn-ghost" onClick={() => navigate(`/quiz/${id}`)}>
-              <RotateCcw size={16} /> Try again
+              <RotateCcw size={18} /> Try again
             </button>
           </div>
         </div>
@@ -108,7 +126,7 @@ export default function QuizResult() {
                     </div>
                   </div>
                   <div className={`br-icon ${b.isCorrect ? 'ok' : 'bad'}`}>
-                    {b.isCorrect ? <CheckCircle size={16} /> : <XCircle size={16} />}
+                    {b.isCorrect ? <CheckCircle size={18} /> : <XCircle size={18} />}
                   </div>
                 </div>
               </div>

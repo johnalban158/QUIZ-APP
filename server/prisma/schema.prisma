@@ -25,18 +25,34 @@ enum ModuleStatus {
 }
 
 model User {
-  id               String                  @id @default(cuid())
+  id                String                  @id @default(cuid())
+  name              String
+  email             String                  @unique
+  passwordHash      String
+  role              Role                    @default(TAKER)
+  specialty         Specialty?
+  createdAt         DateTime                @default(now())
+  modules           Module[]
+  assignments       StaffModuleAssignment[]
+  assignmentsGiven  StaffModuleAssignment[] @relation("AssignmentsBy")
+  completions       StaffModuleCompletion[]
+  staffSubmissions  Submission[]            @relation("StaffSubmissions")
+  seniorProfiles    SeniorProfile[]
+}
+
+model SeniorProfile {
+  id               String        @id @default(cuid())
   name             String
-  email            String                  @unique
-  passwordHash     String
-  role             Role                    @default(TAKER)
-  specialty        Specialty?
-  createdAt        DateTime                @default(now())
-  modules          Module[]
-  assignments      StaffModuleAssignment[]
-  assignmentsGiven StaffModuleAssignment[] @relation("AssignmentsBy")
-  completions      StaffModuleCompletion[]
-  staffSubmissions Submission[]            @relation("StaffSubmissions")
+  email            String?       @unique
+  preferredStaffId String?
+  preferredStaff   User?         @relation(fields: [preferredStaffId], references: [id])
+  notes            String?
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+  submissions      Submission[]
+
+  @@index([name])
+  @@index([preferredStaffId])
 }
 
 model Module {
@@ -129,6 +145,8 @@ model Submission {
   takerEmail       String?
   staffMemberId    String?
   staffMember      User?              @relation("StaffSubmissions", fields: [staffMemberId], references: [id])
+  seniorProfileId  String?
+  seniorProfile    SeniorProfile?     @relation(fields: [seniorProfileId], references: [id])
   score            Int
   total            Int
   timeTakenSeconds Int?
@@ -137,6 +155,7 @@ model Submission {
   completion       StaffModuleCompletion?
 
   @@index([staffMemberId])
+  @@index([seniorProfileId])
 }
 
 model SubmissionAnswer {
