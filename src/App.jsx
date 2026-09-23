@@ -12,6 +12,7 @@ import Residents from './pages/admin/Residents'
 import QuizList from './pages/quiz/QuizList'
 import TakeQuiz from './pages/quiz/TakeQuiz'
 import QuizResult from './pages/quiz/QuizResult'
+import ErrorBoundary from './components/ErrorBoundary'
 import StaffLogin from './pages/staff/StaffLogin'
 import StaffLayout from './pages/staff/StaffLayout'
 import StaffDashboard from './pages/staff/StaffDashboard'
@@ -34,8 +35,8 @@ export default function App() {
         <Route path="submissions/:id" element={<SubmissionDetail />} />
       </Route>
       <Route path="/quiz" element={<QuizList />} />
-      <Route path="/quiz/:id" element={<TakeQuiz />} />
-      <Route path="/quiz/:id/result" element={<QuizResult />} />
+      <Route path="/quiz/:id" element={<ErrorBoundary><TakeQuiz /></ErrorBoundary>} />
+      <Route path="/quiz/:id/result" element={<ErrorBoundary><QuizResult /></ErrorBoundary>} />
       <Route path="/staff/login" element={<StaffLogin />} />
       <Route path="/staff" element={<StaffLayout />}>
         <Route index element={<Navigate to="/staff/dashboard" replace />} />

@@ -497,11 +497,18 @@
   transition: border-color 0.15s, box-shadow 0.15s;
   width: 100%;
   text-align: left;
+  cursor: pointer;
+  color: var(--ink);
 }
 
 .mod-item:hover {
   border-color: var(--accent);
   box-shadow: 0 8px 24px rgba(23, 25, 43, 0.1);
+}
+
+.mod-item:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--accent-soft), 0 0 0 1px var(--accent);
 }
 
 .mod-item-title {
@@ -5566,4 +5573,104 @@ textarea:focus-visible {
     margin-left: 0;
     justify-content: flex-start;
   }
+}
+
+/* =====================================================================
+   Resident name entry (v9) — "Type your name" for quiz takers
+   One huge centered input, one big gold button, calm helper text, and a
+   clear multi-match picker. Reuses .senior-card list styles for matches.
+   ===================================================================== */
+
+/* ---------- Big, elder-friendly name input ---------- */
+.name-input {
+  width: 100%;
+  min-height: 64px;
+  padding: 16px 20px;
+  font-size: 1.35rem;
+  font-weight: 600;
+  text-align: center;
+  color: var(--ink);
+  background: var(--surface);
+  border: 2px solid var(--border);
+  border-radius: 18px;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.name-input::placeholder {
+  color: var(--placeholder);
+  font-weight: 500;
+}
+
+.name-input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 4px var(--focus-ring);
+}
+
+.name-helper {
+  margin-top: 16px;
+  text-align: center;
+  font-size: 0.98rem;
+  color: var(--muted);
+}
+
+/* ---------- Row of real buttons under empty / error states ---------- */
+.name-actions-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 18px;
+}
+
+/* ---------- Quiet text links / reset buttons ---------- */
+.name-alt {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 18px;
+}
+
+.name-alt a,
+.name-alt button {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 44px;
+  padding: 8px 16px;
+  border: none;
+  border-radius: 12px;
+  background: none;
+  color: var(--ink-2);
+  font-family: inherit;
+  font-size: 1rem;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+  transition: color 0.15s ease, background 0.15s ease;
+}
+
+.name-alt a:hover,
+.name-alt button:hover {
+  color: var(--accent);
+  background: var(--accent-soft);
+}
+
+/* ---------- Multi-match picker ("Which one is you?") ---------- */
+.name-matches {
+  margin-top: 18px;
+  text-align: left;
+}
+
+.name-matches .senior-list {
+  max-height: 320px;
+}
+
+/* ---------- Dark theme companion ---------- */
+.dark .name-input {
+  color: var(--ink);
+  border-color: var(--border);
 }

@@ -1,6 +1,6 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
-import { BrowserRouter } from 'react-router-dom'
+import { createBrowserRouter, RouterProvider } from 'react-router-dom'
 import { AuthProvider } from './context/AuthContext'
 import './index.css'
 import './App.css'
@@ -31,12 +31,18 @@ if (savedFontScale === 'large') {
 
 document.title = 'Goodwill Caring Health Services'
 
+// The app mounts through a data router (createBrowserRouter) instead of a
+// declarative <BrowserRouter>. React Router v7 hooks such as useBlocker —
+// used by the quiz-taking page to warn before leaving an in-progress quiz —
+// throw "DataRouterContext is missing" outside a data router, which crashed
+// the whole view to a white screen. The existing <Routes> table in App.jsx
+// is preserved as a descendant router under the splat route below.
+const router = createBrowserRouter([{ path: '*', element: <App /> }])
+
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <BrowserRouter>
-      <AuthProvider>
-        <App />
-      </AuthProvider>
-    </BrowserRouter>
+    <AuthProvider>
+      <RouterProvider router={router} />
+    </AuthProvider>
   </StrictMode>,
 )

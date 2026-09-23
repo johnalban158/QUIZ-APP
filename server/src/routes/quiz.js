@@ -92,6 +92,96 @@ router.post('/seniors', async (req, res) => {
   }
 })
 
+// GET /api/quiz/seniors/find?name=John - Public name-based matching.
+// Matches a quiz taker's typed name to SeniorProfile rows, then resolves each
+// match's designated staff member + that staff's PUBLISHED assigned modules.
+// NOTE: must stay BEFORE '/seniors/:id/modules' and before '/:id' so "find"
+// is never treated as a param value.
+// Response shape:
+// {
+//   matches: [{
+//     senior: { id, name, preferredStaffId },
+//     staff: { id, name, specialty } | null,
+//     modules: [{ id, title, description, createdAt }]
+//   }]
+// }
+router.get('/seniors/find', async (req, res) => {
+  const rawName = req.query?.name
+  const name = typeof rawName === 'string' ? rawName.trim() : ''
+  if (!name) {
+    return res.status(400).json({ error: 'name query parameter is required' })
+  }
+  const seniors = await prisma.seniorProfile.findMany({
+    where: { name: { contains: name, mode: 'insensitive' } },
+    orderBy: { updatedAt: 'desc' },
+    take: 20,
+    include: {
+      preferredStaff: { select: { id: true, name: true, specialty: true } },
+    },
+  })
+  const matches = await Promise.all(
+    seniors.map(async (s) => {
+      if (!s.preferredStaffId) {
+        return {
+          senior: { id: s.id, name: s.name, preferredStaffId: s.preferredStaffId },
+          staff: null,
+          modules: [],
+        }
+      }
+      const assignments = await prisma.staffModuleAssignment.findMany({
+        where: { staffId: s.preferredStaffId, module: { status: 'PUBLISHED' } },
+        include: {
+          module: { select: { id: true, title: true, description: true, createdAt: true } },
+        },
+        orderBy: { assignedAt: 'desc' },
+      })
+      return {
+        senior: { id: s.id, name: s.name, preferredStaffId: s.preferredStaffId },
+        staff: s.preferredStaff ?? null,
+        modules: assignments.map((a) => ({
+          id: a.module.id,
+          title: a.module.title,
+          description: a.module.description,
+          createdAt: a.module.createdAt,
+        })),
+      }
+    })
+  )
+  res.json({ matches })
+})
+
+// GET /api/quiz/seniors/:id/modules - Designated modules for a resident.
+// Returns the PUBLISHED modules assigned to the resident's preferred staff
+// member, so the frontend can AUTO-open the resident's module right after
+// their profile is picked (elderly usability: no browsing needed).
+// Shape: [{ id, title, description, status, staffId, assignedAt }]
+// Empty array when the resident has no preferred staff or no published
+// assignments (caller should fall back to the full quiz list).
+// NOTE: must stay BEFORE router.get('/:id') for readability (multi-segment
+// path can't be swallowed by '/:id', but keep public senior routes together).
+router.get('/seniors/:id/modules', async (req, res) => {
+  const senior = await prisma.seniorProfile.findUnique({ where: { id: req.params.id } })
+  if (!senior) return res.status(404).json({ error: 'Senior not found' })
+  if (!senior.preferredStaffId) return res.json([])
+  const assignments = await prisma.staffModuleAssignment.findMany({
+    where: { staffId: senior.preferredStaffId, module: { status: 'PUBLISHED' } },
+    include: {
+      module: { select: { id: true, title: true, description: true, status: true } },
+    },
+    orderBy: { assignedAt: 'desc' },
+  })
+  res.json(
+    assignments.map((a) => ({
+      id: a.module.id,
+      title: a.module.title,
+      description: a.module.description,
+      status: a.module.status,
+      staffId: a.staffId,
+      assignedAt: a.assignedAt,
+    }))
+  )
+})
+
 router.get('/', async (req, res) => {
   const modules = await prisma.module.findMany({
     where: { status: 'PUBLISHED' },

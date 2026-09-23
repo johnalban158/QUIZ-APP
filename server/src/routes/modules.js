@@ -130,8 +130,50 @@ router.patch('/:id', async (req, res) => {
 })
 
 router.delete('/:id', async (req, res) => {
-  await prisma.module.delete({ where: { id: req.params.id } })
-  res.json({ ok: true })
+  try {
+    const existing = await prisma.module.findUnique({ where: { id: req.params.id } })
+    if (!existing) return res.status(404).json({ error: 'Module not found' })
+    const moduleId = existing.id
+
+    // Delete dependents explicitly in FK-safe order inside a transaction.
+    // (Schema cascades Module -> questions/submissions/etc., but
+    // SubmissionAnswer -> Question/QuestionOption has NO onDelete cascade,
+    // and StaffModuleCompletion -> StaffModuleAssignment has no cascade,
+    // so a plain prisma.module.delete() can fail on FK constraints.)
+    await prisma.$transaction(async (tx) => {
+      // 1. Completions first (FK to assignment compound key + submission)
+      await tx.staffModuleCompletion.deleteMany({ where: { moduleId } })
+      // 2. Answer lines referencing this module's submissions or questions
+      await tx.submissionAnswer.deleteMany({ where: { submission: { moduleId } } })
+      await tx.submissionAnswer.deleteMany({ where: { question: { moduleId } } })
+      // 3. Submissions (their remaining answers already cleared above)
+      await tx.submission.deleteMany({ where: { moduleId } })
+      // 4. Options then questions
+      await tx.questionOption.deleteMany({ where: { question: { moduleId } } })
+      await tx.question.deleteMany({ where: { moduleId } })
+      // 5. Assignments + eligibility (also DB-cascade, deleted explicitly)
+      await tx.staffModuleAssignment.deleteMany({ where: { moduleId } })
+      await tx.moduleEligibility.deleteMany({ where: { moduleId } })
+      // 6. Parent
+      await tx.module.delete({ where: { id: moduleId } })
+    })
+
+    // Clean up uploaded source document file, if any (best-effort)
+    if (existing.sourceDocumentUrl) {
+      try {
+        const filePath = path.join(uploadDir, path.basename(existing.sourceDocumentUrl))
+        if (fs.existsSync(filePath)) fs.unlinkSync(filePath)
+      } catch {
+        // ignore file cleanup errors — DB delete already succeeded
+      }
+    }
+
+    res.json({ ok: true })
+  } catch (e) {
+    if (e?.code === 'P2025') return res.status(404).json({ error: 'Module not found' })
+    console.error(e)
+    res.status(500).json({ error: e.message || 'Failed to delete module' })
+  }
 })
 
 // GET /api/admin/modules/eligible - Get modules eligible for given staff IDs

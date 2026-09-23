@@ -7,10 +7,155 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model User {
+  id               String                  @id @default(cuid())
+  name             String
+  email            String                  @unique
+  passwordHash     String
+  role             Role                    @default(TAKER)
+  createdAt        DateTime                @default(now())
+  specialty        Specialty?
+  modules          Module[]
+  seniorProfiles   SeniorProfile[]
+  assignmentsGiven StaffModuleAssignment[] @relation("AssignmentsBy")
+  assignments      StaffModuleAssignment[]
+  completions      StaffModuleCompletion[]
+  staffSubmissions Submission[]            @relation("StaffSubmissions")
+}
+
+model SeniorProfile {
+  id               String       @id @default(cuid())
+  name             String
+  email            String?      @unique
+  preferredStaffId String?
+  notes            String?
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+  preferredStaff   User?        @relation(fields: [preferredStaffId], references: [id])
+  submissions      Submission[]
+
+  @@index([name])
+  @@index([preferredStaffId])
+}
+
+model Module {
+  id                String                  @id @default(cuid())
+  title             String
+  description       String                  @default("")
+  status            ModuleStatus            @default(DRAFT)
+  createdById       String
+  createdAt         DateTime                @default(now())
+  content           String                  @default("")
+  sourceDocumentUrl String?
+  createdBy         User                    @relation(fields: [createdById], references: [id])
+  eligibility       ModuleEligibility[]
+  questions         Question[]
+  assignments       StaffModuleAssignment[]
+  completions       StaffModuleCompletion[]
+  submissions       Submission[]
+}
+
+model ModuleEligibility {
+  id        String    @id @default(cuid())
+  moduleId  String
+  specialty Specialty
+  module    Module    @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+
+  @@unique([moduleId, specialty])
+  @@index([specialty])
+}
+
+model StaffModuleAssignment {
+  id           String                 @id @default(cuid())
+  staffId      String
+  moduleId     String
+  assignedAt   DateTime               @default(now())
+  assignedById String
+  assignedBy   User                   @relation("AssignmentsBy", fields: [assignedById], references: [id])
+  module       Module                 @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  staff        User                   @relation(fields: [staffId], references: [id], onDelete: Cascade)
+  completion   StaffModuleCompletion?
+
+  @@unique([staffId, moduleId])
+  @@index([staffId])
+  @@index([moduleId])
+}
+
+model StaffModuleCompletion {
+  id              String                @id @default(cuid())
+  staffId         String
+  moduleId        String
+  submissionId    String                @unique
+  score           Int
+  total           Int
+  percent         Int
+  passed          Boolean
+  completedAt     DateTime              @default(now())
+  module          Module                @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  staff           User                  @relation(fields: [staffId], references: [id], onDelete: Cascade)
+  staffAssignment StaffModuleAssignment @relation(fields: [staffId, moduleId], references: [staffId, moduleId])
+  submission      Submission            @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+
+  @@unique([staffId, moduleId])
+  @@index([staffId])
+  @@index([moduleId])
+}
+
+model Question {
+  id          String             @id @default(cuid())
+  moduleId    String
+  text        String
+  orderIndex  Int                @default(0)
+  module      Module             @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  options     QuestionOption[]
+  answerLines SubmissionAnswer[]
+}
+
+model QuestionOption {
+  id         String             @id @default(cuid())
+  questionId String
+  text       String
+  isCorrect  Boolean            @default(false)
+  question   Question           @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  answers    SubmissionAnswer[]
+}
+
+model Submission {
+  id               String                 @id @default(cuid())
+  moduleId         String
+  takerName        String
+  takerEmail       String?
+  score            Int
+  total            Int
+  submittedAt      DateTime               @default(now())
+  timeTakenSeconds Int?
+  staffMemberId    String?
+  seniorProfileId  String?
+  completion       StaffModuleCompletion?
+  module           Module                 @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  seniorProfile    SeniorProfile?         @relation(fields: [seniorProfileId], references: [id])
+  staffMember      User?                  @relation("StaffSubmissions", fields: [staffMemberId], references: [id])
+  answers          SubmissionAnswer[]
+
+  @@index([staffMemberId])
+  @@index([seniorProfileId])
+}
+
+model SubmissionAnswer {
+  id               String         @id @default(cuid())
+  submissionId     String
+  questionId       String
+  selectedOptionId String
+  isCorrect        Boolean
+  question         Question       @relation(fields: [questionId], references: [id])
+  selectedOption   QuestionOption @relation(fields: [selectedOptionId], references: [id])
+  submission       Submission     @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+}
+
 enum Role {
   ADMIN
-  STAFF
   TAKER
+  STAFF
 }
 
 enum Specialty {
@@ -22,149 +167,4 @@ enum Specialty {
 enum ModuleStatus {
   DRAFT
   PUBLISHED
-}
-
-model User {
-  id                String                  @id @default(cuid())
-  name              String
-  email             String                  @unique
-  passwordHash      String
-  role              Role                    @default(TAKER)
-  specialty         Specialty?
-  createdAt         DateTime                @default(now())
-  modules           Module[]
-  assignments       StaffModuleAssignment[]
-  assignmentsGiven  StaffModuleAssignment[] @relation("AssignmentsBy")
-  completions       StaffModuleCompletion[]
-  staffSubmissions  Submission[]            @relation("StaffSubmissions")
-  seniorProfiles    SeniorProfile[]
-}
-
-model SeniorProfile {
-  id               String        @id @default(cuid())
-  name             String
-  email            String?       @unique
-  preferredStaffId String?
-  preferredStaff   User?         @relation(fields: [preferredStaffId], references: [id])
-  notes            String?
-  createdAt        DateTime      @default(now())
-  updatedAt        DateTime      @updatedAt
-  submissions      Submission[]
-
-  @@index([name])
-  @@index([preferredStaffId])
-}
-
-model Module {
-  id                String                  @id @default(cuid())
-  title             String
-  description       String                  @default("")
-  content           String                  @default("")
-  sourceDocumentUrl String?
-  status            ModuleStatus            @default(DRAFT)
-  createdById       String
-  createdBy         User                    @relation(fields: [createdById], references: [id])
-  createdAt         DateTime                @default(now())
-  questions         Question[]
-  submissions       Submission[]
-  eligibility       ModuleEligibility[]
-  assignments       StaffModuleAssignment[]
-  completions       StaffModuleCompletion[]
-}
-
-model ModuleEligibility {
-  id        String    @id @default(cuid())
-  moduleId  String
-  module    Module    @relation(fields: [moduleId], references: [id], onDelete: Cascade)
-  specialty Specialty
-
-  @@unique([moduleId, specialty])
-  @@index([specialty])
-}
-
-model StaffModuleAssignment {
-  id           String                @id @default(cuid())
-  staffId      String
-  staff        User                  @relation(fields: [staffId], references: [id], onDelete: Cascade)
-  moduleId     String
-  module       Module                @relation(fields: [moduleId], references: [id], onDelete: Cascade)
-  assignedAt   DateTime              @default(now())
-  assignedById String
-  assignedBy   User                  @relation("AssignmentsBy", fields: [assignedById], references: [id])
-  completion   StaffModuleCompletion?
-
-  @@unique([staffId, moduleId])
-  @@index([staffId])
-  @@index([moduleId])
-}
-
-model StaffModuleCompletion {
-  id              String                @id @default(cuid())
-  staffId         String
-  staff           User                  @relation(fields: [staffId], references: [id], onDelete: Cascade)
-  moduleId        String
-  module          Module                @relation(fields: [moduleId], references: [id], onDelete: Cascade)
-  submissionId    String                @unique
-  submission      Submission            @relation(fields: [submissionId], references: [id], onDelete: Cascade)
-  score           Int
-  total           Int
-  percent         Int
-  passed          Boolean
-  completedAt     DateTime              @default(now())
-  staffAssignment StaffModuleAssignment? @relation(fields: [staffId, moduleId], references: [staffId, moduleId])
-
-  @@unique([staffId, moduleId])
-  @@index([staffId])
-  @@index([moduleId])
-}
-
-model Question {
-  id            String             @id @default(cuid())
-  moduleId      String
-  module        Module             @relation(fields: [moduleId], references: [id], onDelete: Cascade)
-  text          String
-  orderIndex    Int                @default(0)
-  options       QuestionOption[]
-  answerLines   SubmissionAnswer[]
-}
-
-model QuestionOption {
-  id         String             @id @default(cuid())
-  questionId String
-  question   Question           @relation(fields: [questionId], references: [id], onDelete: Cascade)
-  text       String
-  isCorrect  Boolean            @default(false)
-  answers    SubmissionAnswer[]
-}
-
-model Submission {
-  id               String             @id @default(cuid())
-  moduleId         String
-  module           Module             @relation(fields: [moduleId], references: [id], onDelete: Cascade)
-  takerName        String
-  takerEmail       String?
-  staffMemberId    String?
-  staffMember      User?              @relation("StaffSubmissions", fields: [staffMemberId], references: [id])
-  seniorProfileId  String?
-  seniorProfile    SeniorProfile?     @relation(fields: [seniorProfileId], references: [id])
-  score            Int
-  total            Int
-  timeTakenSeconds Int?
-  submittedAt      DateTime           @default(now())
-  answers          SubmissionAnswer[]
-  completion       StaffModuleCompletion?
-
-  @@index([staffMemberId])
-  @@index([seniorProfileId])
-}
-
-model SubmissionAnswer {
-  id               String         @id @default(cuid())
-  submissionId     String
-  submission       Submission     @relation(fields: [submissionId], references: [id], onDelete: Cascade)
-  questionId       String
-  question         Question       @relation(fields: [questionId], references: [id])
-  selectedOptionId String
-  selectedOption   QuestionOption @relation(fields: [selectedOptionId], references: [id])
-  isCorrect        Boolean
 }

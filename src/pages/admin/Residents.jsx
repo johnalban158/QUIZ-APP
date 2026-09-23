@@ -15,7 +15,9 @@ import ReadAloud from '../../components/ReadAloud'
 // Normalise responses that arrive as an array or as { data: [...] }.
 function asList(payload) {
   if (Array.isArray(payload)) return payload
-  if (payload && Array.isArray(payload.data)) return payload.data
+  for (const key of ['residents', 'data']) {
+    if (payload && Array.isArray(payload[key])) return payload[key]
+  }
   return []
 }
 

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { BookOpen, ChevronRight, FileText, Users, TrendingUp, Plus, Link2 } from 'lucide-react'
+import { BookOpen, ChevronRight, FileText, Link2, Plus, Trash2, TrendingUp, Users, X } from 'lucide-react'
 import { api } from '../../api'
 import { specialtyLabel } from '../../lib'
 
@@ -36,6 +36,11 @@ export default function Modules() {
   const [creating, setCreating] = useState(false)
   const [stats, setStats] = useState(null)
 
+  // Delete module confirmation
+  const [delTarget, setDelTarget] = useState(null)
+  const [delBusy, setDelBusy] = useState(false)
+  const [delError, setDelError] = useState('')
+
   const load = async () => {
     setError('')
     try {
@@ -66,6 +71,25 @@ export default function Modules() {
       setError(err.message || 'Failed to create module')
     } finally {
       setCreating(false)
+    }
+  }
+
+  const deleteModule = async () => {
+    if (!delTarget) return
+    setDelBusy(true)
+    setDelError('')
+    try {
+      await api(`/admin/modules/${delTarget.id}`, { method: 'DELETE' })
+      setDelTarget(null)
+      await load()
+      // Keep the stats strip in sync after a deletion
+      api('/admin/stats')
+        .then(setStats)
+        .catch(() => {})
+    } catch (err) {
+      setDelError(err.message || 'Failed to delete module')
+    } finally {
+      setDelBusy(false)
     }
   }
 
@@ -115,7 +139,19 @@ export default function Modules() {
 
           <div className="mod-list">
             {modules.map((m) => (
-              <button key={m.id} type="button" className="mod-item" onClick={() => navigate(`/admin/modules/${m.id}`)}>
+              <div
+                key={m.id}
+                role="button"
+                tabIndex={0}
+                className="mod-item"
+                onClick={() => navigate(`/admin/modules/${m.id}`)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault()
+                    navigate(`/admin/modules/${m.id}`)
+                  }
+                }}
+              >
                 <div>
                   <div className="mod-item-title">{m.title || 'Untitled module'}</div>
                   {m.description && <div className="mod-item-desc">{m.description}</div>}
@@ -149,11 +185,62 @@ export default function Modules() {
                     </div>
                   )}
                 </div>
-                <ChevronRight size={18} className="muted" />
-              </button>
+                <div className="mod-item-actions">
+                  <button
+                    type="button"
+                    className="icon-btn danger"
+                    title="Delete module"
+                    aria-label={`Delete ${m.title || 'this module'}`}
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      setDelError('')
+                      setDelTarget(m)
+                    }}
+                  >
+                    <Trash2 size={18} />
+                  </button>
+                  <ChevronRight size={18} className="muted" />
+                </div>
+              </div>
             ))}
           </div>
         </>
+      )}
+
+      {/* Delete confirmation */}
+      {delTarget && (
+        <div className="modal-backdrop" onClick={() => setDelTarget(null)}>
+          <div className="card modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-head">
+              <div>
+                <h2 className="modal-title">Delete module?</h2>
+                <p className="page-sub">
+                  {delTarget.status === 'PUBLISHED'
+                    ? `This immediately removes “${delTarget.title || 'Untitled module'}” from the Content Library, the public quiz, and staff training.`
+                    : `This permanently removes “${delTarget.title || 'Untitled module'}” from the Content Library.`}
+                </p>
+              </div>
+              <button type="button" className="modal-close" aria-label="Close" onClick={() => setDelTarget(null)}>
+                <X size={18} />
+              </button>
+            </div>
+
+            {delError && <div className="form-error" role="alert">{delError}</div>}
+
+            <p className="form-hint">
+              Its questions and any assignments or submissions tied to it will be removed too. This can't be undone.
+            </p>
+
+            <div className="modal-actions">
+              <button type="button" className="btn btn-ghost" onClick={() => setDelTarget(null)}>
+                Cancel
+              </button>
+              <button type="button" className="btn btn-danger" onClick={deleteModule} disabled={delBusy}>
+                <Trash2 size={16} /> {delBusy ? 'Deleting…' : 'Delete module'}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </>
   )
