@@ -1,7 +1,8 @@
 import { Router } from 'express'
 import { prisma } from '../prisma.js'
 import { requireAdmin } from '../middleware/auth.js'
-import { upload } from '../middleware/upload.js'
+import { upload, mediaUpload } from '../middleware/upload.js'
+import { cloudinaryConfigured, uploadBuffer, destroyAsset } from '../cloudinary.js'
 import path from 'path'
 import { fileURLToPath } from 'url'
 import fs from 'fs'
@@ -135,6 +136,15 @@ router.delete('/:id', async (req, res) => {
     if (!existing) return res.status(404).json({ error: 'Module not found' })
     const moduleId = existing.id
 
+    // Best-effort: delete question media assets from Cloudinary
+    if (cloudinaryConfigured()) {
+      const media = await prisma.question.findMany({
+        where: { moduleId, mediaPublicId: { not: null } },
+        select: { mediaPublicId: true },
+      })
+      await Promise.allSettled(media.map(async (m) => destroyAsset(m.mediaPublicId)))
+    }
+
     // Delete dependents explicitly in FK-safe order inside a transaction.
     // (Schema cascades Module -> questions/submissions/etc., but
     // SubmissionAnswer -> Question/QuestionOption has NO onDelete cascade,
@@ -242,6 +252,62 @@ router.delete('/:id/upload', async (req, res) => {
   res.json({ ok: true })
 })
 
+// POST /api/admin/modules/:id/questions/:qid/media - Attach audio/video to a question (Cloudinary)
+router.post('/:id/questions/:qid/media', mediaUpload.single('file'), async (req, res) => {
+  if (!req.file) return res.status(400).json({ error: 'No file uploaded' })
+  if (!cloudinaryConfigured()) {
+    return res.status(500).json({
+      error: 'Cloudinary is not configured. Add CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY and CLOUDINARY_API_SECRET to server/.env',
+    })
+  }
+
+  const question = await prisma.question.findFirst({
+    where: { id: req.params.qid, moduleId: req.params.id },
+  })
+  if (!question) return res.status(404).json({ error: 'Question not found' })
+
+  // Replace any existing media (remove the old Cloudinary asset first)
+  if (question.mediaPublicId) {
+    try { await destroyAsset(question.mediaPublicId) } catch { /* best-effort */ }
+  }
+
+  try {
+    const result = await uploadBuffer(req.file.buffer)
+    const updated = await prisma.question.update({
+      where: { id: question.id },
+      data: {
+        mediaUrl: result.secure_url,
+        mediaType: req.file.mimetype.startsWith('video/') ? 'VIDEO' : 'AUDIO',
+        mediaPublicId: result.public_id,
+      },
+      include: { options: true },
+    })
+    res.json(updated)
+  } catch (e) {
+    console.error(e)
+    res.status(500).json({ error: e.message || 'Upload to Cloudinary failed' })
+  }
+})
+
+// DELETE /api/admin/modules/:id/questions/:qid/media - Remove question media from Cloudinary
+router.delete('/:id/questions/:qid/media', async (req, res) => {
+  const question = await prisma.question.findFirst({
+    where: { id: req.params.qid, moduleId: req.params.id },
+  })
+  if (!question) return res.status(404).json({ error: 'Question not found' })
+
+  if (question.mediaPublicId) {
+    try { await destroyAsset(question.mediaPublicId) } catch { /* best-effort */ }
+  }
+
+  const updated = await prisma.question.update({
+    where: { id: question.id },
+    data: { mediaUrl: null, mediaType: null, mediaPublicId: null },
+    include: { options: true },
+  })
+  res.json(updated)
+})
+
 router.post('/:id/questions', async (req, res) => {
   const { text, options } = req.body ?? {}
   if (!text || !text.trim()) return res.status(400).json({ error: 'Question text is required' })
@@ -313,6 +379,11 @@ router.delete('/:id/questions/:qid', async (req, res) => {
     where: { id: req.params.qid, moduleId: req.params.id },
   })
   if (!question) return res.status(404).json({ error: 'Question not found' })
+
+  if (question.mediaPublicId) {
+    try { await destroyAsset(question.mediaPublicId) } catch { /* best-effort */ }
+  }
+
   await prisma.question.delete({ where: { id: question.id } })
   const rest = await prisma.question.findMany({
     where: { moduleId: req.params.id },

@@ -270,6 +270,13 @@
   font-weight: 600;
 }
 
+.table .row-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  white-space: nowrap;
+}
+
 /* ============================= Empty / loading ============================= */
 .empty {
   text-align: center;
@@ -3144,6 +3151,28 @@ textarea:focus-visible {
   font-size: 0.85rem;
   color: var(--ink-2);
   max-width: 100%;
+}
+
+/* ---------- Question media (audio / video) ---------- */
+.qmedia {
+  margin-top: 14px;
+  padding: 12px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+
+.qmedia-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 10px;
+}
+
+.qmedia-type {
+  margin-left: auto;
+  font-size: 0.8rem;
 }
 
 /* ---------- Responsive ---------- */

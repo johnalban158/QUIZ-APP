@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { CheckCircle2, ChevronRight, Search, UserPlus, Users, X } from 'lucide-react'
+import { CheckCircle2, ChevronRight, Search, Snowflake, Unlock, UserPlus, Users, X } from 'lucide-react'
 import { api } from '../../api'
 import { SPECIALTIES, specialtyLabel } from '../../lib'
 
@@ -41,6 +41,10 @@ export default function Staff() {
   const [assignBusy, setAssignBusy] = useState(false)
   const [assignError, setAssignError] = useState('')
   const [assignResult, setAssignResult] = useState(null)
+
+  // Freeze / unfreeze modal
+  const [confirmFreeze, setConfirmFreeze] = useState(null)
+  const [freezeBusy, setFreezeBusy] = useState(false)
 
   const load = async (p = page, q = search, sp = specialty) => {
     setLoading(true)
@@ -144,6 +148,25 @@ export default function Staff() {
     return row ? row.name : id
   }
 
+  const toggleFreeze = async () => {
+    if (!confirmFreeze) return
+    setFreezeBusy(true)
+    setError('')
+    try {
+      await api(`/admin/staff/${confirmFreeze.id}/status`, {
+        method: 'PATCH',
+        body: { isActive: !confirmFreeze.isActive },
+      })
+      setConfirmFreeze(null)
+      load(page, search, specialty)
+    } catch (err) {
+      setError(err.message || 'Failed to update account status')
+      setConfirmFreeze(null)
+    } finally {
+      setFreezeBusy(false)
+    }
+  }
+
   const skippedItems = (assignResult?.skipped ?? []).map((s) =>
     typeof s === 'string' ? { staffId: s, reason: 'SKIPPED' } : s
   )
@@ -235,6 +258,7 @@ export default function Staff() {
                   </th>
                   <th>Name</th>
                   <th>Specialty</th>
+                  <th>Status</th>
                   <th>Training progress</th>
                   <th></th>
                 </tr>
@@ -262,6 +286,13 @@ export default function Staff() {
                     </td>
                     <td>{specialtyLabel(s.specialty)}</td>
                     <td>
+                      {s.isActive === false ? (
+                        <span className="badge badge-bad">Frozen</span>
+                      ) : (
+                        <span className="badge badge-ok">Active</span>
+                      )}
+                    </td>
+                    <td>
                       <div className="progress-mini">
                         <div className="progress-mini-fill" style={{ width: `${s.progressPercent ?? 0}%` }} />
                       </div>
@@ -269,8 +300,29 @@ export default function Staff() {
                         {s.completedModules ?? 0}/{s.totalEligibleModules ?? 0} modules · {s.progressPercent ?? 0}%
                       </div>
                     </td>
-                    <td className="row-link">
-                      View plan <ChevronRight size={15} />
+                    <td className="row-actions">
+                      {s.isActive === false ? (
+                        <button
+                          type="button"
+                          className="btn btn-ghost btn-sm"
+                          onClick={(e) => { e.stopPropagation(); setConfirmFreeze(s) }}
+                          title="Unfreeze this account"
+                        >
+                          <Unlock size={14} /> Unfreeze
+                        </button>
+                      ) : (
+                        <button
+                          type="button"
+                          className="btn btn-ghost btn-sm"
+                          onClick={(e) => { e.stopPropagation(); setConfirmFreeze(s) }}
+                          title="Freeze this account"
+                        >
+                          <Snowflake size={14} /> Freeze
+                        </button>
+                      )}
+                      <span className="row-link">
+                        View plan <ChevronRight size={15} />
+                      </span>
                     </td>
                   </tr>
                 ))}
@@ -416,6 +468,36 @@ export default function Staff() {
                 </div>
               </>
             )}
+          </div>
+        </div>
+      )}
+    {/* Freeze / unfreeze confirm modal */}
+      {confirmFreeze && (
+        <div className="modal-backdrop" onClick={() => { if (!freezeBusy) setConfirmFreeze(null) }}>
+          <div className="card modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-head">
+              <div>
+                <h2 className="modal-title">{confirmFreeze.isActive ? 'Freeze account' : 'Unfreeze account'}</h2>
+                <p className="page-sub">
+                  {confirmFreeze.isActive
+                    ? `${confirmFreeze.name} will be signed out immediately and cannot log back in until unfrozen. Their training records stay intact.`
+                    : `${confirmFreeze.name} will be able to log back in and use their training plan again.`}
+                </p>
+              </div>
+              <button type="button" className="modal-close" aria-label="Close" disabled={freezeBusy} onClick={() => setConfirmFreeze(null)}>
+                <X size={18} />
+              </button>
+            </div>
+            <div className="modal-actions">
+              <button className="btn btn-ghost" disabled={freezeBusy} onClick={() => setConfirmFreeze(null)}>Cancel</button>
+              <button
+                className={confirmFreeze.isActive ? 'btn btn-danger' : 'btn btn-primary'}
+                disabled={freezeBusy}
+                onClick={toggleFreeze}
+              >
+                {freezeBusy ? 'Updating…' : confirmFreeze.isActive ? 'Freeze account' : 'Unfreeze account'}
+              </button>
+            </div>
           </div>
         </div>
       )}

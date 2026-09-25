@@ -48,6 +48,12 @@ export async function api(path, { method = 'GET', body, auth = true } = {}) {
   })
   const data = await res.json().catch(() => ({}))
   if (!res.ok) {
+    // A 401 on an authenticated request means an invalid token or a frozen
+    // account — drop the stale session so the UI reflects the logout.
+    if (auth && (res.status === 401)) {
+      localStorage.removeItem(TOKEN_KEY)
+      localStorage.removeItem(USER_KEY)
+    }
     const err = new Error(data.error || `Request failed (${res.status})`)
     err.status = res.status
     throw err

@@ -207,6 +207,8 @@ router.get('/:id', async (req, res) => {
           id: true,
           text: true,
           orderIndex: true,
+          mediaUrl: true,
+          mediaType: true,
           options: {
             select: { id: true, text: true },
             orderBy: { id: 'asc' },

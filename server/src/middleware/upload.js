@@ -36,3 +36,19 @@ export const upload = multer({
   fileFilter,
   limits: { fileSize: 10 * 1024 * 1024 }, // 10MB
 })
+
+// Media uploads (audio/video) are sent straight to Cloudinary's free tier,
+// so they're kept in memory instead of written to disk.
+const mediaFilter = (_req, file, cb) => {
+  if (file.mimetype.startsWith('audio/') || file.mimetype.startsWith('video/')) {
+    cb(null, true)
+  } else {
+    cb(new Error('Only audio and video files are allowed'), false)
+  }
+}
+
+export const mediaUpload = multer({
+  storage: multer.memoryStorage(),
+  fileFilter: mediaFilter,
+  limits: { fileSize: 50 * 1024 * 1024 }, // 50MB
+})

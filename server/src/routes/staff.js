@@ -139,7 +139,7 @@ adminRouter.get('/', async (req, res) => {
   const [staff, total] = await Promise.all([
     prisma.user.findMany({
       where,
-      select: { id: true, name: true, email: true, specialty: true },
+      select: { id: true, name: true, email: true, specialty: true, isActive: true },
       orderBy: { name: 'asc' },
       skip: (page - 1) * limit,
       take: limit,
@@ -156,7 +156,7 @@ adminRouter.get('/', async (req, res) => {
 adminRouter.get('/:id', async (req, res) => {
   const staff = await prisma.user.findUnique({
     where: { id: req.params.id, role: 'STAFF' },
-    select: { id: true, name: true, email: true, specialty: true },
+    select: { id: true, name: true, email: true, specialty: true, isActive: true },
   })
   if (!staff) return res.status(404).json({ error: 'Staff not found' })
 
@@ -300,6 +300,30 @@ adminRouter.post('/bulk-assign', async (req, res) => {
   res.json({ ok: true, created: created.length, skipped })
 })
 
+// PATCH /api/admin/staff/:id/status - Freeze / unfreeze a staff account
+adminRouter.patch('/:id/status', async (req, res) => {
+  const { id } = req.params
+  const isActive = req.body?.isActive
+
+  if (id === req.user.id) {
+    return res.status(400).json({ error: 'You cannot freeze your own account' })
+  }
+  if (typeof isActive !== 'boolean') {
+    return res.status(400).json({ error: 'isActive (boolean) is required' })
+  }
+
+  const staff = await prisma.user.findUnique({ where: { id, role: 'STAFF' } })
+  if (!staff) return res.status(404).json({ error: 'Staff not found' })
+
+  const updated = await prisma.user.update({
+    where: { id },
+    data: { isActive },
+    select: { id: true, name: true, email: true, specialty: true, isActive: true },
+  })
+
+  res.json({ ok: true, user: updated })
+})
+
 // ===== SELF-SERVICE ROUTES =====
 
 // GET /api/staff/me/residents - Residents assigned to this staff member
@@ -371,7 +395,7 @@ selfRouter.get('/me/modules', async (req, res) => {
 selfRouter.get('/me', async (req, res) => {
   const staff = await prisma.user.findUnique({
     where: { id: req.user.id, role: 'STAFF' },
-    select: { id: true, name: true, email: true, specialty: true },
+    select: { id: true, name: true, email: true, specialty: true, isActive: true },
   })
   if (!staff) return res.status(404).json({ error: 'Staff not found' })
 
@@ -435,6 +459,8 @@ selfRouter.get('/me/modules/:moduleId', async (req, res) => {
           id: true,
           text: true,
           orderIndex: true,
+          mediaUrl: true,
+          mediaType: true,
           options: { select: { id: true, text: true }, orderBy: { id: 'asc' } },
         },
       },

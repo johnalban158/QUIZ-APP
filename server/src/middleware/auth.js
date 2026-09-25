@@ -1,17 +1,32 @@
 import jwt from 'jsonwebtoken'
+import { prisma } from '../prisma.js'
 
-export function requireAuth(req, res, next) {
+export async function requireAuth(req, res, next) {
   const header = req.headers.authorization || ''
   const token = header.startsWith('Bearer ') ? header.slice(7) : null
   if (!token) {
     return res.status(401).json({ error: 'Missing token' })
   }
+  let payload
   try {
-    req.user = jwt.verify(token, process.env.JWT_SECRET)
-    next()
+    payload = jwt.verify(token, process.env.JWT_SECRET)
   } catch {
     return res.status(401).json({ error: 'Invalid or expired token' })
   }
+  // Re-check the account in the DB so a frozen staff member's existing
+  // session is invalidated immediately (force logout).
+  const account = await prisma.user.findUnique({
+    where: { id: payload.id },
+    select: { isActive: true },
+  })
+  if (!account) {
+    return res.status(401).json({ error: 'Account no longer exists' })
+  }
+  if (!account.isActive) {
+    return res.status(401).json({ error: 'Account frozen' })
+  }
+  req.user = payload
+  next()
 }
 
 export function requireAdmin(req, res, next) {

@@ -8,10 +8,12 @@ import {
   ClipboardList,
   FileQuestion,
   Link2,
+  Music,
   Pencil,
   Plus,
   Trash2,
   Upload,
+  Video,
   X,
 } from 'lucide-react'
 import { api, getToken } from '../../api'
@@ -42,6 +44,8 @@ export default function ModuleEditor() {
   const [addText, setAddText] = useState('')
   const [addOpts, setAddOpts] = useState(EMPTY_OPTIONS)
   const fileRef = useRef(null)
+  const mediaRefs = useRef({})
+  const [mediaBusyId, setMediaBusyId] = useState(null)
 
   const load = async () => {
     try {
@@ -210,6 +214,45 @@ export default function ModuleEditor() {
       await api(`/admin/modules/${id}/questions/${qid}`, { method: 'DELETE' })
       await load()
       setEditingId(null)
+    } catch (err) {
+      setError(err.message)
+    }
+  }
+
+  const uploadMedia = async (q, file) => {
+    setMediaBusyId(q.id)
+    setError('')
+    try {
+      const form = new FormData()
+      form.append('file', file)
+      const res = await fetch(`/api/admin/modules/${id}/questions/${q.id}/media`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${getToken()}` },
+        body: form,
+      })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) throw new Error(data.error || `Upload failed (${res.status})`)
+      setMod((prev) => ({
+        ...prev,
+        questions: prev.questions.map((item) => (item.id === q.id ? data : item)),
+      }))
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setMediaBusyId(null)
+    }
+  }
+
+  const removeMedia = async (q) => {
+    if (!window.confirm('Remove this audio/video from the question?')) return
+    setError('')
+    try {
+      const updated = await api(`/admin/modules/${id}/questions/${q.id}/media`, { method: 'DELETE' })
+      setMod((prev) => ({
+        ...prev,
+        questions: prev.questions.map((item) => (item.id === q.id ? updated : item)),
+      }))
+      setMediaBusyId(null)
     } catch (err) {
       setError(err.message)
     }
@@ -493,6 +536,46 @@ export default function ModuleEditor() {
                           {opt.isCorrect && <span className="badge badge-ok" style={{ marginLeft: 'auto' }}>Correct</span>}
                         </div>
                       ))}
+                    </div>
+                    <div className="qmedia">
+                      {q.mediaType === 'AUDIO' && (
+                        <audio src={q.mediaUrl} controls preload="metadata" style={{ width: '100%', height: 40 }} />
+                      )}
+                      {q.mediaType === 'VIDEO' && (
+                        <video src={q.mediaUrl} controls preload="metadata" style={{ width: '100%', maxHeight: 260, borderRadius: 10 }} />
+                      )}
+                      <div className="qmedia-actions">
+                        <input
+                          ref={(el) => { mediaRefs.current[q.id] = el }}
+                          type="file"
+                          accept="audio/*,video/*"
+                          style={{ display: 'none' }}
+                          onChange={async (e) => {
+                            const file = e.target.files?.[0]
+                            if (file) await uploadMedia(q, file)
+                            if (mediaRefs.current[q.id]) mediaRefs.current[q.id].value = ''
+                          }}
+                        />
+                        <button
+                          type="button"
+                          className="btn btn-ghost btn-sm"
+                          onClick={() => mediaRefs.current[q.id]?.click()}
+                          disabled={mediaBusyId === q.id}
+                        >
+                          {q.mediaType === 'AUDIO' ? <Music size={14} /> : q.mediaType === 'VIDEO' ? <Video size={14} /> : <Upload size={14} />}
+                          {mediaBusyId === q.id ? 'Uploading…' : q.mediaUrl ? 'Replace audio/video' : 'Add audio/video'}
+                        </button>
+                        {q.mediaUrl && (
+                          <button type="button" className="btn btn-danger btn-sm" onClick={() => removeMedia(q)} disabled={mediaBusyId === q.id}>
+                            <Trash2 size={14} /> Remove
+                          </button>
+                        )}
+                        {q.mediaUrl && (
+                          <span className="muted qmedia-type">
+                            {q.mediaType === 'AUDIO' ? 'Audio' : 'Video'} attached
+                          </span>
+                        )}
+                      </div>
                     </div>
                   </>
                 )}

@@ -14,6 +14,9 @@ router.post('/login', async (req, res) => {
   if (!user) {
     return res.status(401).json({ error: 'Invalid credentials' })
   }
+  if (!user.isActive) {
+    return res.status(403).json({ error: 'Account frozen. Contact an administrator.' })
+  }
   const ok = await bcrypt.compare(password, user.passwordHash)
   if (!ok) {
     return res.status(401).json({ error: 'Invalid credentials' })
@@ -47,6 +50,9 @@ router.post('/staff/login', async (req, res) => {
   if (!user || user.role !== 'STAFF') {
     return res.status(401).json({ error: 'Invalid credentials' })
   }
+  if (!user.isActive) {
+    return res.status(403).json({ error: 'Account frozen. Contact an administrator.' })
+  }
   const ok = await bcrypt.compare(password, user.passwordHash)
   if (!ok) {
     return res.status(401).json({ error: 'Invalid credentials' })
@@ -63,6 +69,9 @@ router.post('/admin/login', async (req, res) => {
   const user = await prisma.user.findUnique({ where: { email } })
   if (!user || user.role !== 'ADMIN') {
     return res.status(401).json({ error: 'Invalid credentials' })
+  }
+  if (!user.isActive) {
+    return res.status(403).json({ error: 'Account frozen. Contact an administrator.' })
   }
   const ok = await bcrypt.compare(password, user.passwordHash)
   if (!ok) {

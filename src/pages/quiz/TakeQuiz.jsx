@@ -552,6 +552,12 @@ export default function TakeQuiz() {
             </h2>
             <ReadAloud text={questionReadText} />
           </div>
+          {q.mediaType === 'AUDIO' && (
+            <audio src={q.mediaUrl} controls preload="metadata" style={{ width: '100%', height: 44, marginTop: 8 }} />
+          )}
+          {q.mediaType === 'VIDEO' && (
+            <video src={q.mediaUrl} controls preload="metadata" style={{ width: '100%', maxHeight: 320, marginTop: 8, borderRadius: 12 }} />
+          )}
           <div className="quiz-opts" role="group" aria-label="Choices">
             {q.options.map((opt, i) => {
               const selected = answers[q.id] === opt.id

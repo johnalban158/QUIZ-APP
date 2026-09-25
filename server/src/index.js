@@ -61,6 +61,9 @@ app.use((err, _req, res, _next) => {
   if (err.message && err.message.includes('Only PDF, DOCX, and TXT')) {
     return res.status(400).json({ error: err.message })
   }
+  if (err.message && err.message.includes('Only audio and video')) {
+    return res.status(400).json({ error: err.message })
+  }
   res.status(500).json({ error: err.message || 'Something went wrong' })
 })
 

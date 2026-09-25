@@ -13,6 +13,7 @@ model User {
   email            String                  @unique
   passwordHash     String
   role             Role                    @default(TAKER)
+  isActive         Boolean                 @default(true)
   createdAt        DateTime                @default(now())
   specialty        Specialty?
   modules          Module[]
@@ -102,13 +103,16 @@ model StaffModuleCompletion {
 }
 
 model Question {
-  id          String             @id @default(cuid())
-  moduleId    String
-  text        String
-  orderIndex  Int                @default(0)
-  module      Module             @relation(fields: [moduleId], references: [id], onDelete: Cascade)
-  options     QuestionOption[]
-  answerLines SubmissionAnswer[]
+  id             String             @id @default(cuid())
+  moduleId       String
+  text           String
+  orderIndex     Int                @default(0)
+  mediaUrl       String?
+  mediaType      QuestionMedia?
+  mediaPublicId  String?
+  module         Module             @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  options        QuestionOption[]
+  answerLines    SubmissionAnswer[]
 }
 
 model QuestionOption {
@@ -167,4 +171,9 @@ enum Specialty {
 enum ModuleStatus {
   DRAFT
   PUBLISHED
+}
+
+enum QuestionMedia {
+  AUDIO
+  VIDEO
 }
