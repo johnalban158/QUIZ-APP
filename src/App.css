@@ -5703,3 +5703,117 @@ textarea:focus-visible {
   color: var(--ink);
   border-color: var(--border);
 }
+/* ---- Report a bug (sidebar footer, admin + staff) ---- */
+.admin-report {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 10px 12px;
+  margin-bottom: 4px;
+  border: none;
+  border-radius: 10px;
+  background: none;
+  color: var(--ink-2);
+  font-size: 0.93rem;
+  font-weight: 600;
+  text-align: left;
+  transition: background 0.15s;
+}
+
+.admin-report:hover {
+  background: var(--surface-2);
+}
+
+.field-hint {
+  margin: 6px 0 0;
+  font-size: 0.8rem;
+  color: var(--ink-2);
+  opacity: 0.75;
+}
+
+/* ---- Media storage meter (admin content library) ---- */
+.storage-card {
+  margin: 0 0 18px;
+  padding: 16px 18px;
+}
+
+.storage-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 12px;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.storage-plan {
+  margin-left: auto;
+  padding: 2px 9px;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent-2);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.storage-bar {
+  height: 8px;
+  border-radius: 999px;
+  background: var(--surface-2);
+  overflow: hidden;
+}
+
+.storage-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: var(--ok);
+  transition: width 0.3s ease;
+}
+
+.storage-fill.warn {
+  background: var(--warn);
+}
+
+.storage-fill.danger {
+  background: var(--bad);
+}
+
+.storage-meta {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin: 10px 0 0;
+  font-size: 0.85rem;
+  color: var(--ink-2);
+}
+
+.storage-dot {
+  opacity: 0.5;
+}
+
+.storage-note {
+  margin: 0;
+  font-size: 0.88rem;
+  color: var(--ink-2);
+}
+
+.storage-warn {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin: 10px 0 0;
+  font-size: 0.84rem;
+  font-weight: 600;
+}
+
+.storage-warn.warn {
+  color: var(--warn);
+}
+
+.storage-warn.danger {
+  color: var(--bad);
+}

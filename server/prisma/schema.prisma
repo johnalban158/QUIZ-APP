@@ -22,6 +22,26 @@ model User {
   assignments      StaffModuleAssignment[]
   completions      StaffModuleCompletion[]
   staffSubmissions Submission[]            @relation("StaffSubmissions")
+  bugReports       BugReport[]
+}
+
+// Bug reports submitted from the in-app "Report a bug" button (admin + staff).
+// Always persisted to the DB; emailed to the owner when SMTP is configured.
+model BugReport {
+  id        String   @id @default(cuid())
+  userId    String?
+  userName  String
+  userEmail String?
+  role      Role?
+  category  String   @default("GENERAL")
+  message   String
+  pageUrl   String?
+  userAgent String?
+  emailed   Boolean  @default(false)
+  createdAt DateTime @default(now())
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([createdAt])
 }
 
 model SeniorProfile {

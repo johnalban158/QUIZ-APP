@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { BookOpen, ChevronRight, FileText, Link2, Plus, Trash2, TrendingUp, Users, X } from 'lucide-react'
 import { api } from '../../api'
 import { specialtyLabel } from '../../lib'
+import StorageMeter from '../../components/StorageMeter'
 
 function timeAgo(iso) {
   if (!iso) return null
@@ -113,6 +114,8 @@ export default function Modules() {
         <StatTile icon={Users} label="Unique takers" value={stats ? stats.uniqueTakers : '--'} />
         <StatTile icon={TrendingUp} label="Avg score" value={stats ? `${Math.round(stats.averageScorePercent)}%` : '--'} />
       </div>
+
+      <StorageMeter />
 
       {error && <div className="form-error">{error}</div>}
 

@@ -1,7 +1,7 @@
 ---
 description: Backend specialist for the Quiz App. Use for ALL Express/API work: server/src routes, auth/JWT, request handling, error responses, and endpoint behavior on port 4000. NOT for React pages, CSS, Prisma schema, or PostgreSQL setup.
 mode: subagent
-model: opencode/muse-spark-1.3-contributor-free
+model: opencode/longcat-2.5-preview-free
 ---
 
 > **Runs after the database agent.** Do not start until `server/prisma/schema.prisma` is

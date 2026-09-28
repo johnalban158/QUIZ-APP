@@ -25,3 +25,8 @@ src-tauri/target
 *.njsproj
 *.sln
 *.sw?
+
+# Server runtime data (never commit)
+server/uploads/
+server/backups/
+

@@ -2,6 +2,7 @@ import { NavLink, Outlet, Navigate } from 'react-router-dom'
 import { BookOpen, ListChecks, LogOut, Users, UsersRound } from 'lucide-react'
 import { useAuth } from '../../context/AuthContext'
 import { AdminBrand } from '../../components/Brand'
+import ReportBug from '../../components/ReportBug'
 
 export default function AdminLayout() {
   const { user, logout } = useAuth()
@@ -44,6 +45,7 @@ export default function AdminLayout() {
           </div>
 
           <div className="admin-side-foot">
+            <ReportBug />
             <button type="button" className="admin-logout" onClick={logout}>
               <LogOut size={16} /> Log out
             </button>

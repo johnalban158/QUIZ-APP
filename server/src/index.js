@@ -10,6 +10,8 @@ import quizRoutes from './routes/quiz.js'
 import statsRoutes from './routes/stats.js'
 import { adminRouter as staffAdminRouter, selfRouter as staffSelfRouter } from './routes/staff.js'
 import residentsRouter from './routes/admin/residents.js'
+import reportsRouter from './routes/reports.js'
+import storageRouter from './routes/storage.js'
 import { requireAdmin } from './middleware/auth.js'
 
 const __filename = fileURLToPath(import.meta.url)
@@ -37,8 +39,10 @@ app.get('/', (_req, res) => {
 })
 
 app.get('/api/health', (_req, res) => res.json({ ok: true }))
+app.use('/api', reportsRouter)
 app.use('/api/auth', authRoutes)
 app.use('/api/admin/modules', moduleRoutes)
+app.use('/api/admin/storage', storageRouter)
 app.use('/api/admin/submissions', submissionRoutes)
 app.use('/api/admin/stats', statsRoutes)
 app.use('/api/admin/staff', staffAdminRouter)
@@ -54,11 +58,11 @@ app.use((err, _req, res, _next) => {
   // Handle multer errors
   if (err.name === 'MulterError') {
     if (err.code === 'LIMIT_FILE_SIZE') {
-      return res.status(400).json({ error: 'File too large (max 10MB)' })
+      return res.status(400).json({ error: 'File too large (max 25MB)' })
     }
     return res.status(400).json({ error: err.message })
   }
-  if (err.message && err.message.includes('Only PDF, DOCX, and TXT')) {
+  if (err.message && err.message.includes('Only PDF, DOCX')) {
     return res.status(400).json({ error: err.message })
   }
   if (err.message && err.message.includes('Only audio and video')) {

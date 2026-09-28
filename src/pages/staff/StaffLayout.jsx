@@ -2,6 +2,7 @@ import { NavLink, Outlet, Navigate } from 'react-router-dom'
 import { BookOpen, LayoutDashboard, LogOut } from 'lucide-react'
 import { useAuth } from '../../context/AuthContext'
 import { AdminBrand } from '../../components/Brand'
+import ReportBug from '../../components/ReportBug'
 import { specialtyLabel } from '../../lib'
 
 export default function StaffLayout() {
@@ -35,6 +36,7 @@ export default function StaffLayout() {
           </div>
 
           <div className="admin-side-foot">
+            <ReportBug />
             <button type="button" className="admin-logout" onClick={logout}>
               <LogOut size={16} /> Log out
             </button>
