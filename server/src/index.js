@@ -6,13 +6,10 @@ import { fileURLToPath } from 'url'
 import authRoutes from './routes/auth.js'
 import moduleRoutes from './routes/modules.js'
 import submissionRoutes from './routes/submissions.js'
-import quizRoutes from './routes/quiz.js'
 import statsRoutes from './routes/stats.js'
 import { adminRouter as staffAdminRouter, selfRouter as staffSelfRouter } from './routes/staff.js'
-import residentsRouter from './routes/admin/residents.js'
 import reportsRouter from './routes/reports.js'
 import storageRouter from './routes/storage.js'
-import { requireAdmin } from './middleware/auth.js'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -46,19 +43,25 @@ app.use('/api/admin/storage', storageRouter)
 app.use('/api/admin/submissions', submissionRoutes)
 app.use('/api/admin/stats', statsRoutes)
 app.use('/api/admin/staff', staffAdminRouter)
-app.use('/api/admin/residents', requireAdmin, residentsRouter)
 app.use('/api/staff', staffSelfRouter)
-app.use('/api/quiz', quizRoutes)
+// NOTE: `/api/quiz` (public no-login quiz) and `/api/admin/residents`
+// (SeniorProfile) were removed - staff submissions live under /api/staff.
 
 // Unknown /api/* -> always JSON 404 (never HTML, so fetch().json() won't choke on <!DOCTYPE...>)
 app.use('/api', (req, res) => res.status(404).json({ error: 'Not found' }))
 
-app.use((err, _req, res, _next) => {
+app.use((err, req, res, _next) => {
   console.error(err)
   // Handle multer errors
   if (err.name === 'MulterError') {
     if (err.code === 'LIMIT_FILE_SIZE') {
-      return res.status(400).json({ error: 'File too large (max 25MB)' })
+      // Two different multer limits exist:
+      //  - document uploads (POST /api/admin/modules/:id/upload) -> 25 MB
+      //  - media uploads (POST .../questions/:qid/media)        -> 50 MB
+      const isMediaUpload = /\/questions\/[^/]+\/media\/?$/.test(req.path || '')
+      return res
+        .status(400)
+        .json({ error: isMediaUpload ? 'File too large (max 50MB)' : 'File too large (max 25MB)' })
     }
     return res.status(400).json({ error: err.message })
   }

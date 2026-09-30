@@ -12,12 +12,11 @@ model User {
   name             String
   email            String                  @unique
   passwordHash     String
-  role             Role                    @default(TAKER)
+  role             Role                    @default(NURSE)
   isActive         Boolean                 @default(true)
   createdAt        DateTime                @default(now())
   specialty        Specialty?
   modules          Module[]
-  seniorProfiles   SeniorProfile[]
   assignmentsGiven StaffModuleAssignment[] @relation("AssignmentsBy")
   assignments      StaffModuleAssignment[]
   completions      StaffModuleCompletion[]
@@ -42,21 +41,6 @@ model BugReport {
   user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
 
   @@index([createdAt])
-}
-
-model SeniorProfile {
-  id               String       @id @default(cuid())
-  name             String
-  email            String?      @unique
-  preferredStaffId String?
-  notes            String?
-  createdAt        DateTime     @default(now())
-  updatedAt        DateTime     @updatedAt
-  preferredStaff   User?        @relation(fields: [preferredStaffId], references: [id])
-  submissions      Submission[]
-
-  @@index([name])
-  @@index([preferredStaffId])
 }
 
 model Module {
@@ -154,15 +138,12 @@ model Submission {
   submittedAt      DateTime               @default(now())
   timeTakenSeconds Int?
   staffMemberId    String?
-  seniorProfileId  String?
   completion       StaffModuleCompletion?
   module           Module                 @relation(fields: [moduleId], references: [id], onDelete: Cascade)
-  seniorProfile    SeniorProfile?         @relation(fields: [seniorProfileId], references: [id])
   staffMember      User?                  @relation("StaffSubmissions", fields: [staffMemberId], references: [id])
   answers          SubmissionAnswer[]
 
   @@index([staffMemberId])
-  @@index([seniorProfileId])
 }
 
 model SubmissionAnswer {
@@ -178,8 +159,8 @@ model SubmissionAnswer {
 
 enum Role {
   ADMIN
-  TAKER
-  STAFF
+  NURSE
+  CAREGIVER
 }
 
 enum Specialty {

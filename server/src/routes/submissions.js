@@ -15,7 +15,12 @@ router.get('/', async (req, res) => {
 
   const submissions = await prisma.submission.findMany({
     where,
-    include: { module: { select: { id: true, title: true } }, staffMember: { select: { id: true, name: true } } },
+    include: {
+      module: { select: { id: true, title: true } },
+      // Staff member name/role so the admin UI can label the person
+      // ("Nurse"/"Caregiver") instead of a generic "taker".
+      staffMember: { select: { id: true, name: true, email: true, role: true, specialty: true } },
+    },
     orderBy: { [sortField]: sortOrder },
   })
   res.json(submissions)
@@ -26,7 +31,7 @@ router.get('/:id', async (req, res) => {
     where: { id: req.params.id },
     include: {
       module: { select: { id: true, title: true } },
-      staffMember: { select: { id: true, name: true } },
+      staffMember: { select: { id: true, name: true, email: true, role: true, specialty: true } },
       answers: {
         include: {
           question: {

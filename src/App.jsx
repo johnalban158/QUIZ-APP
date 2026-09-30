@@ -8,16 +8,13 @@ import Submissions from './pages/admin/Submissions'
 import SubmissionDetail from './pages/admin/SubmissionDetail'
 import Staff from './pages/admin/Staff'
 import StaffTrainingPlan from './pages/admin/StaffTrainingPlan'
-import Residents from './pages/admin/Residents'
-import QuizList from './pages/quiz/QuizList'
-import TakeQuiz from './pages/quiz/TakeQuiz'
-import QuizResult from './pages/quiz/QuizResult'
 import ErrorBoundary from './components/ErrorBoundary'
 import StaffLogin from './pages/staff/StaffLogin'
 import StaffLayout from './pages/staff/StaffLayout'
 import StaffDashboard from './pages/staff/StaffDashboard'
 import StaffHome from './pages/staff/StaffHome'
 import StaffModule from './pages/staff/StaffModule'
+import StaffQuiz from './pages/staff/StaffQuiz'
 
 export default function App() {
   return (
@@ -29,20 +26,20 @@ export default function App() {
         <Route path="modules" element={<Modules />} />
         <Route path="modules/:id" element={<ModuleEditor />} />
         <Route path="staff" element={<Staff />} />
-        <Route path="residents" element={<Residents />} />
         <Route path="staff/:id" element={<StaffTrainingPlan />} />
         <Route path="submissions" element={<Submissions />} />
         <Route path="submissions/:id" element={<SubmissionDetail />} />
       </Route>
-      <Route path="/quiz" element={<QuizList />} />
-      <Route path="/quiz/:id" element={<ErrorBoundary><TakeQuiz /></ErrorBoundary>} />
-      <Route path="/quiz/:id/result" element={<ErrorBoundary><QuizResult /></ErrorBoundary>} />
       <Route path="/staff/login" element={<StaffLogin />} />
       <Route path="/staff" element={<StaffLayout />}>
         <Route index element={<Navigate to="/staff/dashboard" replace />} />
         <Route path="dashboard" element={<StaffDashboard />} />
         <Route path="plan" element={<StaffHome />} />
         <Route path="modules/:id" element={<StaffModule />} />
+        <Route
+          path="modules/:id/quiz"
+          element={<ErrorBoundary><StaffQuiz /></ErrorBoundary>}
+        />
       </Route>
       <Route path="*" element={<RoleSelect />} />
     </Routes>

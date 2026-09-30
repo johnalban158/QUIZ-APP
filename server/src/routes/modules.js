@@ -1,6 +1,6 @@
 import { Router } from 'express'
 import { prisma } from '../prisma.js'
-import { requireAdmin } from '../middleware/auth.js'
+import { requireAdmin, STAFF_ROLES } from '../middleware/auth.js'
 import { upload, mediaUpload } from '../middleware/upload.js'
 import { cloudinaryConfigured, uploadBuffer, destroyAsset } from '../cloudinary.js'
 import path from 'path'
@@ -14,6 +14,9 @@ const uploadDir = path.join(__dirname, '..', '..', 'uploads')
 const router = Router()
 
 router.use(requireAdmin)
+
+// Any staff member (NURSE or CAREGIVER) - the old `role: 'STAFF'` is gone.
+const STAFF_FILTER = { in: STAFF_ROLES }
 
 const withQuestions = {
   questions: {
@@ -192,7 +195,7 @@ router.get('/eligible', async (req, res) => {
   if (staffIds.length === 0) return res.json([])
 
   const staff = await prisma.user.findMany({
-    where: { id: { in: staffIds }, role: 'STAFF' },
+    where: { id: { in: staffIds }, role: STAFF_FILTER },
     select: { id: true, specialty: true },
   })
   if (staff.length === 0) return res.json([])
@@ -252,9 +255,45 @@ router.delete('/:id/upload', async (req, res) => {
   res.json({ ok: true })
 })
 
+// ===== Question media (Cloudinary) =====
+// Videos must be 10 minutes or shorter. `durationSeconds` may arrive as a
+// client-supplied multipart field (checked BEFORE we spend an upload); after
+// the upload the authoritative duration is Cloudinary's upload result
+// `duration` field (seconds), which is what we enforce on.
+const MAX_VIDEO_SECONDS = 600
+
+function formatMinutesSeconds(totalSeconds) {
+  const total = Math.max(0, Math.round(totalSeconds))
+  return `${Math.floor(total / 60)}:${String(total % 60).padStart(2, '0')}`
+}
+
+function videoTooLongError(durationSeconds) {
+  return `Videos must be 10 minutes or shorter (this one is ${formatMinutesSeconds(durationSeconds)}).`
+}
+
 // POST /api/admin/modules/:id/questions/:qid/media - Attach audio/video to a question (Cloudinary)
 router.post('/:id/questions/:qid/media', mediaUpload.single('file'), async (req, res) => {
   if (!req.file) return res.status(400).json({ error: 'No file uploaded' })
+
+  const isVideo = req.file.mimetype.startsWith('video/')
+
+  // Hard guard (videos only - audio is unchanged, size cap only): reject before
+  // uploading when the client already knows how long the video is (multipart
+  // field `durationSeconds`). This runs BEFORE the Cloudinary config check so
+  // an over-long video is always a 400, never a 500.
+  const declaredRaw = req.body?.durationSeconds
+  const declaredDuration =
+    declaredRaw === undefined || declaredRaw === null || declaredRaw === ''
+      ? NaN
+      : Number(declaredRaw)
+  if (isVideo && Number.isFinite(declaredDuration) && declaredDuration > MAX_VIDEO_SECONDS) {
+    return res.status(400).json({
+      error: videoTooLongError(declaredDuration),
+      durationSeconds: declaredDuration,
+      durationSource: 'client-supplied durationSeconds field (pre-upload guard)',
+    })
+  }
+
   if (!cloudinaryConfigured()) {
     return res.status(500).json({
       error: 'Cloudinary is not configured. Add CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY and CLOUDINARY_API_SECRET to server/.env',
@@ -266,18 +305,50 @@ router.post('/:id/questions/:qid/media', mediaUpload.single('file'), async (req,
   })
   if (!question) return res.status(404).json({ error: 'Question not found' })
 
-  // Replace any existing media (remove the old Cloudinary asset first)
+  let result
+  try {
+    result = await uploadBuffer(req.file.buffer)
+  } catch (e) {
+    console.error(e)
+    return res.status(500).json({ error: e.message || 'Upload to Cloudinary failed' })
+  }
+
+  // Cloudinary's upload result carries `duration` (seconds) for video assets.
+  const uploadedDuration =
+    typeof result.duration === 'number' && Number.isFinite(result.duration)
+      ? result.duration
+      : declaredDuration
+
+  if (isVideo && uploadedDuration > MAX_VIDEO_SECONDS) {
+    // Too long: destroy the just-uploaded asset and leave the question's
+    // existing media untouched.
+    try {
+      await destroyAsset(result.public_id)
+    } catch {
+      /* best-effort */
+    }
+    console.log(
+      `Rejected over-long video for question ${question.id}: ${uploadedDuration}s ` +
+        `(${formatMinutesSeconds(uploadedDuration)}) - duration taken from the Cloudinary upload result.`
+    )
+    return res.status(400).json({
+      error: videoTooLongError(uploadedDuration),
+      durationSeconds: uploadedDuration,
+      durationSource: 'Cloudinary upload result "duration" field (seconds)',
+    })
+  }
+
+  // The new asset passed validation - now replace any existing media.
   if (question.mediaPublicId) {
     try { await destroyAsset(question.mediaPublicId) } catch { /* best-effort */ }
   }
 
   try {
-    const result = await uploadBuffer(req.file.buffer)
     const updated = await prisma.question.update({
       where: { id: question.id },
       data: {
         mediaUrl: result.secure_url,
-        mediaType: req.file.mimetype.startsWith('video/') ? 'VIDEO' : 'AUDIO',
+        mediaType: isVideo ? 'VIDEO' : 'AUDIO',
         mediaPublicId: result.public_id,
       },
       include: { options: true },

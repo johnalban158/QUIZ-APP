@@ -1,6 +1,10 @@
 import jwt from 'jsonwebtoken'
 import { prisma } from '../prisma.js'
 
+// Roles that may use the staff surface (dashboard, quizzes, submissions).
+// ADMIN is also allowed by requireStaff, as before.
+export const STAFF_ROLES = ['NURSE', 'CAREGIVER']
+
 export async function requireAuth(req, res, next) {
   const header = req.headers.authorization || ''
   const token = header.startsWith('Bearer ') ? header.slice(7) : null
@@ -40,7 +44,7 @@ export function requireAdmin(req, res, next) {
 
 export function requireStaff(req, res, next) {
   requireAuth(req, res, () => {
-    if (req.user.role !== 'STAFF' && req.user.role !== 'ADMIN') {
+    if (!STAFF_ROLES.includes(req.user.role) && req.user.role !== 'ADMIN') {
       return res.status(403).json({ error: 'Staff access required' })
     }
     next()

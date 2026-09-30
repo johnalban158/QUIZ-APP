@@ -1,9 +1,16 @@
 import { Router } from 'express'
 import { prisma } from '../prisma.js'
-import { requireAdmin, requireStaff } from '../middleware/auth.js'
+import { requireAdmin, requireStaff, STAFF_ROLES } from '../middleware/auth.js'
 
 const adminRouter = Router()
 const selfRouter = Router()
+
+// Where-clause matching any staff member (NURSE or CAREGIVER).
+// `role: STAFF_FILTER` no longer exists in the Role enum.
+const STAFF_FILTER = { in: STAFF_ROLES }
+
+// Passing grade, unchanged: >= 70%.
+const PASS_PERCENT = 70
 
 // Admin routes - all requireAdmin
 adminRouter.use(requireAdmin)
@@ -127,7 +134,7 @@ adminRouter.get('/', async (req, res) => {
   const search = req.query.search ? String(req.query.search).trim() : ''
   const specialty = req.query.specialty ? String(req.query.specialty) : ''
 
-  const where = { role: 'STAFF' }
+  const where = { role: STAFF_FILTER }
   if (search) {
     where.OR = [
       { name: { contains: search, mode: 'insensitive' } },
@@ -155,7 +162,7 @@ adminRouter.get('/', async (req, res) => {
 // GET /api/admin/staff/:id - Staff detail with training plan
 adminRouter.get('/:id', async (req, res) => {
   const staff = await prisma.user.findUnique({
-    where: { id: req.params.id, role: 'STAFF' },
+    where: { id: req.params.id, role: STAFF_FILTER },
     select: { id: true, name: true, email: true, specialty: true, isActive: true },
   })
   if (!staff) return res.status(404).json({ error: 'Staff not found' })
@@ -191,7 +198,7 @@ adminRouter.post('/:id/modules', async (req, res) => {
   const { moduleId } = req.body ?? {}
   if (!moduleId) return res.status(400).json({ error: 'moduleId is required' })
 
-  const staff = await prisma.user.findUnique({ where: { id: req.params.id, role: 'STAFF' } })
+  const staff = await prisma.user.findUnique({ where: { id: req.params.id, role: STAFF_FILTER } })
   if (!staff) return res.status(404).json({ error: 'Staff not found' })
 
   const module = await prisma.module.findUnique({ where: { id: moduleId } })
@@ -224,7 +231,7 @@ adminRouter.post('/:id/modules', async (req, res) => {
 adminRouter.delete('/:id/modules/:moduleId', async (req, res) => {
   const { id, moduleId } = req.params
 
-  const staff = await prisma.user.findUnique({ where: { id, role: 'STAFF' } })
+  const staff = await prisma.user.findUnique({ where: { id, role: STAFF_FILTER } })
   if (!staff) return res.status(404).json({ error: 'Staff not found' })
 
   const completion = await prisma.staffModuleCompletion.findUnique({
@@ -251,7 +258,7 @@ adminRouter.post('/bulk-assign', async (req, res) => {
   }
 
   const staff = await prisma.user.findMany({
-    where: { id: { in: staffIds }, role: 'STAFF' },
+    where: { id: { in: staffIds }, role: STAFF_FILTER },
     select: { id: true, specialty: true },
   })
   if (staff.length !== staffIds.length) {
@@ -312,7 +319,7 @@ adminRouter.patch('/:id/status', async (req, res) => {
     return res.status(400).json({ error: 'isActive (boolean) is required' })
   }
 
-  const staff = await prisma.user.findUnique({ where: { id, role: 'STAFF' } })
+  const staff = await prisma.user.findUnique({ where: { id, role: STAFF_FILTER } })
   if (!staff) return res.status(404).json({ error: 'Staff not found' })
 
   const updated = await prisma.user.update({
@@ -325,25 +332,6 @@ adminRouter.patch('/:id/status', async (req, res) => {
 })
 
 // ===== SELF-SERVICE ROUTES =====
-
-// GET /api/staff/me/residents - Residents assigned to this staff member
-// Returns SeniorProfile[] where preferredStaffId = me
-selfRouter.get('/me/residents', async (req, res) => {
-  const residents = await prisma.seniorProfile.findMany({
-    where: { preferredStaffId: req.user.id },
-    select: {
-      id: true,
-      name: true,
-      email: true,
-      notes: true,
-      createdAt: true,
-      updatedAt: true,
-      _count: { select: { submissions: true } },
-    },
-    orderBy: { name: 'asc' },
-  })
-  res.json({ residents })
-})
 
 // GET /api/staff/me/modules - Module assignments with completion status
 selfRouter.get('/me/modules', async (req, res) => {
@@ -394,7 +382,7 @@ selfRouter.get('/me/modules', async (req, res) => {
 // GET /api/staff/me - Own training plan
 selfRouter.get('/me', async (req, res) => {
   const staff = await prisma.user.findUnique({
-    where: { id: req.user.id, role: 'STAFF' },
+    where: { id: req.user.id, role: STAFF_FILTER },
     select: { id: true, name: true, email: true, specialty: true, isActive: true },
   })
   if (!staff) return res.status(404).json({ error: 'Staff not found' })
@@ -475,6 +463,215 @@ selfRouter.get('/me/modules/:moduleId', async (req, res) => {
     content: module.content,
     questions: module.questions,
   })
+})
+
+/**
+ * Grade a set of questions against the caller's selections.
+ * `selectedByQuestionId` is a Map<questionId, selectedOptionId>.
+ * Returns score/total/percent/passed plus the per-question breakdown and the
+ * SubmissionAnswer rows to persist (only for questions actually answered).
+ */
+function gradeQuestions(questions, selectedByQuestionId) {
+  let score = 0
+  const breakdown = []
+  const answerRows = []
+
+  for (const q of questions) {
+    const correctOption = q.options.find((o) => o.isCorrect) ?? null
+    const selectedOptionId = selectedByQuestionId.get(q.id) ?? null
+    const selected = selectedOptionId ? (q.options.find((o) => o.id === selectedOptionId) ?? null) : null
+    const isCorrect = !!(selected && selected.isCorrect)
+    if (selected) {
+      if (isCorrect) score++
+      answerRows.push({ questionId: q.id, selectedOptionId: selected.id, isCorrect })
+    }
+    breakdown.push({
+      questionId: q.id,
+      text: q.text,
+      selectedOptionId,
+      correctOptionId: correctOption ? correctOption.id : null,
+      isCorrect,
+    })
+  }
+
+  const total = questions.length
+  const percent = total > 0 ? Math.round((score / total) * 100) : 0
+  return { score, total, percent, passed: percent >= PASS_PERCENT, breakdown, answerRows }
+}
+
+// Rebuild a breakdown from stored SubmissionAnswer rows (used by /results so a
+// past attempt shows what was actually graded at the time).
+function breakdownFromStored(questions, answers) {
+  const answerByQuestion = new Map(answers.map((a) => [a.questionId, a]))
+  return questions.map((q) => {
+    const stored = answerByQuestion.get(q.id)
+    const correctOption = q.options.find((o) => o.isCorrect) ?? null
+    return {
+      questionId: q.id,
+      text: q.text,
+      selectedOptionId: stored ? stored.selectedOptionId : null,
+      correctOptionId: correctOption ? correctOption.id : null,
+      isCorrect: stored ? !!stored.isCorrect : false,
+    }
+  })
+}
+
+// POST /api/staff/me/modules/:moduleId/submit - grade + record an attempt.
+// The caller must have this module assigned; grading happens server-side only
+// (correct answers are revealed in the response, never before).
+selfRouter.post('/me/modules/:moduleId/submit', async (req, res) => {
+  const { moduleId } = req.params
+  const { answers, timeTakenSeconds } = req.body ?? {}
+
+  if (!Array.isArray(answers) || answers.length === 0) {
+    return res.status(400).json({ error: 'answers must be a non-empty array of { questionId, selectedOptionId }' })
+  }
+  if (
+    timeTakenSeconds !== undefined &&
+    timeTakenSeconds !== null &&
+    (!Number.isInteger(timeTakenSeconds) || timeTakenSeconds < 0)
+  ) {
+    return res.status(400).json({ error: 'timeTakenSeconds must be a non-negative integer' })
+  }
+
+  // PUBLISHED module only
+  const module = await prisma.module.findFirst({
+    where: { id: moduleId, status: 'PUBLISHED' },
+    include: {
+      questions: {
+        orderBy: { orderIndex: 'asc' },
+        include: { options: { orderBy: { id: 'asc' } } },
+      },
+    },
+  })
+  if (!module) return res.status(404).json({ error: 'Module not found or not published' })
+
+  // Assignment required: staff may only submit modules assigned to them
+  const assignment = await prisma.staffModuleAssignment.findUnique({
+    where: { staffId_moduleId: { staffId: req.user.id, moduleId: module.id } },
+  })
+  if (!assignment) return res.status(403).json({ error: 'Module is not assigned to you' })
+
+  // Keep only answers that belong to this module (question + option pair).
+  const questionById = new Map(module.questions.map((q) => [q.id, q]))
+  const selectedByQuestionId = new Map()
+  for (const entry of answers) {
+    if (!entry || typeof entry.questionId !== 'string' || typeof entry.selectedOptionId !== 'string') continue
+    const question = questionById.get(entry.questionId)
+    if (!question) continue
+    if (!question.options.some((o) => o.id === entry.selectedOptionId)) continue
+    if (!selectedByQuestionId.has(question.id)) selectedByQuestionId.set(question.id, entry.selectedOptionId)
+  }
+  if (selectedByQuestionId.size === 0) {
+    return res.status(400).json({ error: "answers must reference this module's questions and options" })
+  }
+
+  const { score, total, percent, passed, breakdown, answerRows } = gradeQuestions(
+    module.questions,
+    selectedByQuestionId
+  )
+
+  // Submission + (on pass) StaffModuleCompletion in one transaction
+  const submission = await prisma.$transaction(async (tx) => {
+    const created = await tx.submission.create({
+      data: {
+        moduleId: module.id,
+        staffMemberId: req.user.id,
+        takerName: req.user.name,
+        takerEmail: req.user.email,
+        score,
+        total,
+        timeTakenSeconds: timeTakenSeconds ?? null,
+        answers: { create: answerRows },
+      },
+    })
+
+    if (passed) {
+      await tx.staffModuleCompletion.upsert({
+        where: { staffId_moduleId: { staffId: req.user.id, moduleId: module.id } },
+        create: {
+          staffId: req.user.id,
+          moduleId: module.id,
+          submissionId: created.id,
+          score,
+          total,
+          percent,
+          passed: true,
+        },
+        update: {
+          submissionId: created.id,
+          score,
+          total,
+          percent,
+          passed: true,
+          completedAt: new Date(),
+        },
+      })
+    }
+
+    return created
+  })
+
+  res.status(201).json({
+    submissionId: submission.id,
+    score,
+    total,
+    percent,
+    passed,
+    completedAt: submission.submittedAt,
+    breakdown,
+  })
+})
+
+// GET /api/staff/me/modules/:moduleId/results - past attempts for the caller.
+selfRouter.get('/me/modules/:moduleId/results', async (req, res) => {
+  const { moduleId } = req.params
+
+  const assignment = await prisma.staffModuleAssignment.findUnique({
+    where: { staffId_moduleId: { staffId: req.user.id, moduleId } },
+  })
+  if (!assignment) return res.status(404).json({ error: 'Module not assigned to you' })
+
+  const submissions = await prisma.submission.findMany({
+    where: { moduleId, staffMemberId: req.user.id },
+    orderBy: { submittedAt: 'desc' },
+    select: {
+      id: true,
+      score: true,
+      total: true,
+      submittedAt: true,
+      answers: { select: { questionId: true, selectedOptionId: true, isCorrect: true } },
+    },
+  })
+
+  const toAttempt = (s) => {
+    const percent = s.total > 0 ? Math.round((s.score / s.total) * 100) : 0
+    return {
+      id: s.id,
+      score: s.score,
+      total: s.total,
+      percent,
+      passed: percent >= PASS_PERCENT,
+      submittedAt: s.submittedAt,
+    }
+  }
+  const attempts = submissions.map(toAttempt)
+
+  let latest = null
+  if (submissions.length > 0) {
+    const newest = submissions[0]
+    const questions = await prisma.question.findMany({
+      where: { moduleId },
+      orderBy: { orderIndex: 'asc' },
+      select: { id: true, text: true, options: { select: { id: true, isCorrect: true } } },
+    })
+    latest = {
+      ...toAttempt(newest),
+      breakdown: breakdownFromStored(questions, newest.answers),
+    }
+  }
+
+  res.json({ attempts, latest })
 })
 
 export { adminRouter, selfRouter }

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { ArrowLeft, CalendarDays, CheckCircle, FileQuestion, XCircle } from 'lucide-react'
 import { api } from '../../api'
+import { roleLabel } from '../../lib'
 
 export default function SubmissionDetail() {
   const { id } = useParams()
@@ -44,6 +45,8 @@ export default function SubmissionDetail() {
   }
 
   const pct = sub.total ? Math.round((sub.score / sub.total) * 100) : 0
+  const staffName = sub.staffMember?.name ?? sub.takerName ?? 'Unknown staff member'
+  const staffRole = roleLabel(sub.staffMember?.role ?? sub.role ?? '')
 
   return (
     <div>
@@ -52,10 +55,14 @@ export default function SubmissionDetail() {
       </Link>
 
       <div className="sub-head">
-        <span className="avatar avatar-lg">{(sub.takerName || '?')[0].toUpperCase()}</span>
+        <span className="avatar avatar-lg">{(staffName || '?')[0].toUpperCase()}</span>
         <div className="sub-head-text">
-          <h1 style={{ marginBottom: 0 }}>{sub.takerName}</h1>
-          <p className="page-sub" style={{ marginBottom: 0 }}>on {sub.module?.title ?? '—'}</p>
+          <p className="eyebrow" style={{ marginBottom: 4 }}>Staff member</p>
+          <h1 style={{ marginBottom: 0 }}>{staffName}</h1>
+          <p className="page-sub" style={{ marginBottom: 0 }}>
+            {staffRole ? `${staffRole} · on ` : 'on '}
+            {sub.module?.title ?? '—'}
+          </p>
         </div>
         <div className="sub-head-meta">
           <span className={`badge ${pct >= 70 ? 'badge-ok' : 'badge-bad'}`} style={{ fontSize: '0.82rem' }}>

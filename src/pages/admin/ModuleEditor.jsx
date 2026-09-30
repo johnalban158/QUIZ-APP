@@ -46,6 +46,29 @@ export default function ModuleEditor() {
   const fileRef = useRef(null)
   const mediaRefs = useRef({})
   const [mediaBusyId, setMediaBusyId] = useState(null)
+  const [mediaErrorId, setMediaErrorId] = useState(null)
+  const [mediaError, setMediaError] = useState('')
+
+  // Reads a video file's duration in the browser with a detached <video>
+  // element so we can reject files longer than 10 minutes before uploading.
+  const readVideoDuration = (file) =>
+    new Promise((resolve) => {
+      const url = URL.createObjectURL(file)
+      const el = document.createElement('video')
+      el.preload = 'metadata'
+      const done = (seconds) => {
+        URL.revokeObjectURL(url)
+        resolve(Number.isFinite(seconds) ? seconds : 0)
+      }
+      el.onloadedmetadata = () => done(el.duration)
+      el.onerror = () => done(0)
+      el.src = url
+    })
+
+  const formatDuration = (seconds) => {
+    const s = Math.max(0, Math.round(seconds))
+    return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`
+  }
 
   const load = async () => {
     try {
@@ -222,9 +245,30 @@ export default function ModuleEditor() {
   const uploadMedia = async (q, file) => {
     setMediaBusyId(q.id)
     setError('')
+    setMediaError('')
+    setMediaErrorId(null)
     try {
+      // Client-side pre-check: videos over 10 minutes are rejected before
+      // any bytes are uploaded (the server enforces the same rule).
+      const looksLikeVideo =
+        (file.type && file.type.startsWith('video/')) || /\.(mp4|webm|mov|m4v|ogv|mkv)$/i.test(file.name)
+      let durationSeconds = null
+      if (looksLikeVideo) {
+        const duration = await readVideoDuration(file)
+        if (duration > 600) {
+          throw new Error(
+            `Videos must be 10 minutes or shorter (this one is ${formatDuration(duration)}).`
+          )
+        }
+        durationSeconds = duration
+      }
       const form = new FormData()
       form.append('file', file)
+      // Tell the server how long the video is so it can reject over-long files
+      // before spending an upload (server enforces the same 10-minute rule).
+      if (durationSeconds !== null && Number.isFinite(durationSeconds) && durationSeconds > 0) {
+        form.append('durationSeconds', String(Math.round(durationSeconds)))
+      }
       const res = await fetch(`/api/admin/modules/${id}/questions/${q.id}/media`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${getToken()}` },
@@ -238,6 +282,8 @@ export default function ModuleEditor() {
       }))
     } catch (err) {
       setError(err.message)
+      setMediaError(err.message)
+      setMediaErrorId(q.id)
     } finally {
       setMediaBusyId(null)
     }
@@ -246,6 +292,8 @@ export default function ModuleEditor() {
   const removeMedia = async (q) => {
     if (!window.confirm('Remove this audio/video from the question?')) return
     setError('')
+    setMediaError('')
+    setMediaErrorId(null)
     try {
       const updated = await api(`/admin/modules/${id}/questions/${q.id}/media`, { method: 'DELETE' })
       setMod((prev) => ({
@@ -255,6 +303,8 @@ export default function ModuleEditor() {
       setMediaBusyId(null)
     } catch (err) {
       setError(err.message)
+      setMediaError(err.message)
+      setMediaErrorId(q.id)
     }
   }
 
@@ -575,7 +625,13 @@ export default function ModuleEditor() {
                             {q.mediaType === 'AUDIO' ? 'Audio' : 'Video'} attached
                           </span>
                         )}
+                        <span className="form-hint">Videos: max 10 minutes (50 MB)</span>
                       </div>
+                      {mediaErrorId === q.id && mediaError && (
+                        <div className="form-error" role="alert" style={{ marginTop: 8 }}>
+                          {mediaError}
+                        </div>
+                      )}
                     </div>
                   </>
                 )}

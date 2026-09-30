@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import { Link, NavLink, useNavigate } from 'react-router-dom'
-import { ArrowLeft, BookOpen, GraduationCap, LogOut, Moon, Play, Shield, Sun } from 'lucide-react'
+import { ArrowLeft, BookOpen, GraduationCap, LogOut, Moon, Shield, Sun } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
+import { isStaffRole } from '../lib'
 
 const THEME_KEY = 'kanani_theme'
 const FONT_KEY = 'kanani_font_scale'
@@ -49,17 +50,13 @@ export default function Brand({ right, back, backLabel }) {
         </Link>
 
         <nav className="nav-links" aria-label="Primary">
-          <NavLink to="/quiz" className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}>
-            <Play size={18} />
-            <span className="nav-label">Take a quiz</span>
-          </NavLink>
           {user?.role === 'ADMIN' && (
             <NavLink to="/admin" className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}>
               <Shield size={18} />
               <span className="nav-label">Admin</span>
             </NavLink>
           )}
-          {user?.role === 'STAFF' && (
+          {user && isStaffRole(user.role) && (
             <NavLink to="/staff" className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}>
               <BookOpen size={18} />
               <span className="nav-label">My training</span>

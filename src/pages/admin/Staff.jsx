@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { CheckCircle2, ChevronRight, Search, Snowflake, Unlock, UserPlus, Users, X } from 'lucide-react'
 import { api } from '../../api'
-import { SPECIALTIES, specialtyLabel } from '../../lib'
+import RoleBadge from '../../components/RoleBadge'
+import { SPECIALTIES, STAFF_ROLES, roleLabel, specialtyLabel } from '../../lib'
 
 const LIMIT = 10
 
@@ -30,7 +31,13 @@ export default function Staff() {
 
   // Add staff modal
   const [showAdd, setShowAdd] = useState(false)
-  const [form, setForm] = useState({ name: '', email: '', password: '', specialty: SPECIALTIES[0].value })
+  const [form, setForm] = useState({
+    name: '',
+    email: '',
+    password: '',
+    role: STAFF_ROLES[0],
+    specialty: SPECIALTIES[0].value,
+  })
   const [addBusy, setAddBusy] = useState(false)
   const [addError, setAddError] = useState('')
 
@@ -96,7 +103,13 @@ export default function Staff() {
     try {
       await api('/auth/staff/register', { method: 'POST', body: form })
       setShowAdd(false)
-      setForm({ name: '', email: '', password: '', specialty: SPECIALTIES[0].value })
+      setForm({
+        name: '',
+        email: '',
+        password: '',
+        role: STAFF_ROLES[0],
+        specialty: SPECIALTIES[0].value,
+      })
       setSelected(new Set())
       setPage(1)
       load(1, search, specialty)
@@ -279,7 +292,7 @@ export default function Staff() {
                       <div className="staff-cell">
                         <span className="avatar avatar-sm">{(s.name || '?')[0].toUpperCase()}</span>
                         <div>
-                          <div className="staff-name">{s.name}</div>
+                          <div className="staff-name">{s.name} <RoleBadge role={s.role} /></div>
                           <div className="muted staff-email">{s.email}</div>
                         </div>
                       </div>
@@ -372,6 +385,20 @@ export default function Staff() {
                 <input className="input" type="password" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} placeholder="Temporary password" required />
               </div>
               <div className="modal-form-grid">
+                <div className="field">
+                  <label>Role <span className="req">*</span></label>
+                  <select
+                    className="select"
+                    value={form.role}
+                    onChange={(e) => setForm({ ...form, role: e.target.value })}
+                    required
+                  >
+                    {STAFF_ROLES.map((r) => (
+                      <option key={r} value={r}>{roleLabel(r)}</option>
+                    ))}
+                  </select>
+                  <p className="form-hint">Nurses and caregivers sign in at the staff login.</p>
+                </div>
                 <div className="field">
                   <label>Specialty</label>
                   <select className="select" value={form.specialty} onChange={(e) => setForm({ ...form, specialty: e.target.value })}>

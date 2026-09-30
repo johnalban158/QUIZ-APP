@@ -111,7 +111,7 @@ export default function Modules() {
       <div className="admin-stats">
         <StatTile icon={BookOpen} label="Published" value={stats ? stats.publishedModules : '--'} />
         <StatTile icon={FileText} label="Submissions" value={stats ? stats.totalSubmissions : '--'} />
-        <StatTile icon={Users} label="Unique takers" value={stats ? stats.uniqueTakers : '--'} />
+        <StatTile icon={Users} label="Staff trained" value={stats ? stats.uniqueTakers : '--'} />
         <StatTile icon={TrendingUp} label="Avg score" value={stats ? `${Math.round(stats.averageScorePercent)}%` : '--'} />
       </div>
 

@@ -24,12 +24,16 @@ const COMPANION_CARE_CONTENT = [
   '70% or higher.',
 ].join(' ')
 
-const STAFF_SEED = [
-  { name: 'Maria Santos', email: 'maria.santos@quizapp.com', specialty: 'HOME_HEALTH_AIDE' },
-  { name: 'James Rivera', email: 'james.rivera@quizapp.com', specialty: 'PERSONAL_CARE_AIDE' },
-  { name: 'Elena Cruz', email: 'elena.cruz@quizapp.com', specialty: 'COMPANION_RESPITE_AIDE' },
-  { name: 'David Kim', email: 'david.kim@quizapp.com', specialty: 'HOME_HEALTH_AIDE' },
-  { name: 'Aisha Johnson', email: 'aisha.johnson@quizapp.com', specialty: 'PERSONAL_CARE_AIDE' },
+const PASS_PERCENT = 70
+
+// Demo staff roster. Roles are NURSE / CAREGIVER (ADMIN is the seeded admin below).
+// Every demo staff account uses the same password: staff123
+const DEMO_STAFF_ROSTER = [
+  { name: 'Maria Santos', email: 'maria.santos@quizapp.com', role: 'NURSE', specialty: 'HOME_HEALTH_AIDE' },
+  { name: 'James Rivera', email: 'james.rivera@quizapp.com', role: 'CAREGIVER', specialty: 'PERSONAL_CARE_AIDE' },
+  { name: 'Elena Cruz', email: 'elena.cruz@quizapp.com', role: 'NURSE', specialty: 'COMPANION_RESPITE_AIDE' },
+  { name: 'David Kim', email: 'david.kim@quizapp.com', role: 'CAREGIVER', specialty: 'HOME_HEALTH_AIDE' },
+  { name: 'Aisha Johnson', email: 'aisha.johnson@quizapp.com', role: 'NURSE', specialty: 'PERSONAL_CARE_AIDE' },
 ]
 
 async function ensureModule({ title, description, content, status, createdById, questions }) {
@@ -73,30 +77,43 @@ async function ensureAssignment(staffId, moduleId, assignedById) {
   })
 }
 
-// Creates a 100% passing senior submission attributed to a staff member,
-// plus the linked StaffModuleCompletion. Skips if a completion already exists.
-async function ensurePassingCompletion({ staffId, moduleId, takerName }) {
-  const existing = await prisma.staffModuleCompletion.findFirst({
-    where: { staffId, moduleId },
-  })
-  if (existing) {
-    console.log(`Completion already exists for staff ${staffId} on module ${moduleId}, skipping.`)
-    return existing
-  }
-
+async function loadModuleForGrading(moduleId) {
   const mod = await prisma.module.findUnique({
     where: { id: moduleId },
     include: { questions: { orderBy: { orderIndex: 'asc' }, include: { options: true } } },
   })
   if (!mod || mod.questions.length === 0) {
-    console.log(`Cannot seed completion: module ${moduleId} has no questions.`)
+    console.log(`Cannot seed submission: module ${moduleId} has no questions.`)
     return null
   }
+  return mod
+}
 
-  const answerLines = mod.questions.map((q) => {
+function gradeAnswers(mod, { pickFirstCorrect }) {
+  return mod.questions.map((q) => {
     const correct = q.options.find((o) => o.isCorrect) ?? q.options[0]
-    return { questionId: q.id, selectedOptionId: correct.id, isCorrect: !!correct.isCorrect }
+    const wrong = q.options.find((o) => !o.isCorrect) ?? correct
+    const selected = pickFirstCorrect ? correct : wrong
+    return { questionId: q.id, selectedOptionId: selected.id, isCorrect: !!selected.isCorrect }
   })
+}
+
+// Creates a submission attributed to the logged-in staff member (takerName/takerEmail
+// are the staff member's own name/email), plus the linked StaffModuleCompletion on pass.
+// Skips if the staff member already has a submission for this module.
+async function ensureSubmission({ staffId, moduleId, staffName, staffEmail, timeTakenSeconds = 120, allCorrect = true }) {
+  const existing = await prisma.submission.findFirst({
+    where: { staffMemberId: staffId, moduleId },
+  })
+  if (existing) {
+    console.log(`Submission already exists for staff ${staffEmail} on module ${moduleId}, skipping.`)
+    return existing
+  }
+
+  const mod = await loadModuleForGrading(moduleId)
+  if (!mod) return null
+
+  const answerLines = gradeAnswers(mod, { pickFirstCorrect: allCorrect })
   const score = answerLines.filter((a) => a.isCorrect).length
   const total = mod.questions.length
   const percent = total ? Math.round((score / total) * 100) : 0
@@ -105,28 +122,72 @@ async function ensurePassingCompletion({ staffId, moduleId, takerName }) {
     data: {
       moduleId,
       staffMemberId: staffId,
-      takerName,
-      takerEmail: null, // senior flow: no email collected
+      takerName: staffName,
+      takerEmail: staffEmail,
       score,
       total,
-      timeTakenSeconds: 120,
+      timeTakenSeconds,
       answers: { create: answerLines },
     },
   })
+  console.log(
+    `Seeded submission: ${staffName} (${staffEmail}) -> ${mod.title} (${score}/${total}, ${percent}%)`
+  )
+  return submission
+}
 
+// Passing submission + StaffModuleCompletion (pass mark: >= 70%).
+async function ensurePassingCompletion({ staffId, moduleId, staffName, staffEmail }) {
+  const existing = await prisma.staffModuleCompletion.findFirst({
+    where: { staffId, moduleId },
+  })
+  if (existing) {
+    console.log(`Completion already exists for staff ${staffId} on module ${moduleId}, skipping.`)
+    return existing
+  }
+
+  const submission = await ensureSubmission({
+    staffId,
+    moduleId,
+    staffName,
+    staffEmail,
+    allCorrect: true,
+  })
+  if (!submission) return null
+
+  const total = submission.total
+  const percent = total ? Math.round((submission.score / total) * 100) : 0
   const completion = await prisma.staffModuleCompletion.create({
     data: {
       staffId,
       moduleId,
       submissionId: submission.id,
-      score,
-      total,
+      score: submission.score,
+      total: submission.total,
       percent,
-      passed: percent >= 70,
+      passed: percent >= PASS_PERCENT,
     },
   })
-  console.log(`Seeded passing completion: ${takerName} -> staff ${staffId} (${score}/${total}, ${percent}%)`)
+  console.log(`Seeded completion: ${staffEmail} -> ${percent}% (pass mark ${PASS_PERCENT}%)`)
   return completion
+}
+
+// Legacy cleanup: submissions created by the old senior flow were attributed to a
+// staff member but named the senior and collected no email. Re-attribute them to
+// the staff member themselves so every submission matches the logged-in-staff model.
+async function reattributeLegacySubmissions() {
+  const legacy = await prisma.submission.findMany({
+    where: { staffMemberId: { not: null }, takerEmail: null },
+    include: { staffMember: true },
+  })
+  for (const sub of legacy) {
+    if (!sub.staffMember) continue
+    await prisma.submission.update({
+      where: { id: sub.id },
+      data: { takerName: sub.staffMember.name, takerEmail: sub.staffMember.email },
+    })
+    console.log(`Re-attributed legacy submission ${sub.id} to ${sub.staffMember.email}`)
+  }
 }
 
 async function main() {
@@ -134,7 +195,7 @@ async function main() {
 
   const admin = await prisma.user.upsert({
     where: { email: 'admin@quizapp.com' },
-    update: {},
+    update: { name: 'Admin', role: 'ADMIN' },
     create: {
       name: 'Admin',
       email: 'admin@quizapp.com',
@@ -146,15 +207,15 @@ async function main() {
   // --- Staff roster (always runs, even if modules already exist) ---
   const staffPassword = await bcrypt.hash('staff123', 10)
   const staffByEmail = {}
-  for (const s of STAFF_SEED) {
+  for (const s of DEMO_STAFF_ROSTER) {
     const user = await prisma.user.upsert({
       where: { email: s.email },
-      update: { name: s.name, specialty: s.specialty, role: 'STAFF' },
+      update: { name: s.name, specialty: s.specialty, role: s.role },
       create: {
         name: s.name,
         email: s.email,
         passwordHash: staffPassword,
-        role: 'STAFF',
+        role: s.role,
         specialty: s.specialty,
       },
     })
@@ -265,7 +326,7 @@ async function main() {
     ],
   })
 
-  // --- Eligibility: specialty-only rules (state dimension removed) ---
+  // --- Eligibility: specialty-only rules ---
   // General Knowledge -> Home Health Aides
   // Science Basics    -> Personal Care Aides
   // Companion Care    -> Companion & Respite Aides
@@ -289,20 +350,43 @@ async function main() {
   await ensureAssignment(elena.id, companionCare.id, admin.id)
   console.log('Seeded staff module assignments.')
 
-  // --- Completions via real passing senior submissions (senior name -> staff credit) ---
+  // --- Legacy senior-flow submissions -> attributed to the staff member ---
+  await reattributeLegacySubmissions()
+
+  // --- Demo submissions + completions (pass mark 70%) ---
+  // Passing attempts -> Submission + StaffModuleCompletion.
   await ensurePassingCompletion({
     staffId: maria.id,
     moduleId: generalKnowledge.id,
-    takerName: 'Rosa Delgado',
+    staffName: maria.name,
+    staffEmail: maria.email,
   })
   await ensurePassingCompletion({
     staffId: james.id,
     moduleId: scienceBasics.id,
-    takerName: 'Harold Finch',
+    staffName: james.name,
+    staffEmail: james.email,
+  })
+  // Failing attempts -> Submission only (no completion), so admin screens show pass/fail mix.
+  await ensureSubmission({
+    staffId: aisha.id,
+    moduleId: scienceBasics.id,
+    staffName: aisha.name,
+    staffEmail: aisha.email,
+    timeTakenSeconds: 45,
+    allCorrect: false,
+  })
+  await ensureSubmission({
+    staffId: elena.id,
+    moduleId: companionCare.id,
+    staffName: elena.name,
+    staffEmail: elena.email,
+    timeTakenSeconds: 75,
+    allCorrect: false,
   })
 
   console.log('Seeded admin login: admin@quizapp.com / admin123')
-  console.log('Seeded staff logins: <staff email> / staff123')
+  console.log('Seeded staff logins: <staff email> / staff123 (NURSE: Maria, Elena, Aisha; CAREGIVER: James, David)')
   console.log('Seeded modules:', generalKnowledge.title, '&', scienceBasics.title, '&', companionCare.title)
 }
 

@@ -5,8 +5,8 @@ import { AlertTriangle } from 'lucide-react'
  * Friendly crash fallback for the quiz-taking routes.
  *
  * A render crash in React unmounts the whole tree, leaving a blank white
- * page. This boundary catches those errors and shows a calm, elder-friendly
- * message with a single "Back to quizzes" action instead.
+ * page. This boundary catches those errors and shows a calm, accessible
+ * message with a single "Back to my dashboard" action instead.
  */
 export default class ErrorBoundary extends Component {
   constructor(props) {
@@ -35,9 +35,9 @@ export default class ErrorBoundary extends Component {
             <button
               type="button"
               className="btn btn-primary"
-              onClick={() => window.location.assign('/quiz')}
+              onClick={() => window.location.assign('/staff/dashboard')}
             >
-              Back to quizzes
+              Back to my dashboard
             </button>
           </div>
         </div>

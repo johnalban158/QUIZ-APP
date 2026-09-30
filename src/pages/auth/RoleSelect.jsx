@@ -1,21 +1,14 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ArrowRight, Shield, UserCog, Users } from 'lucide-react'
+import { ArrowRight, Shield, UserCog } from 'lucide-react'
 import Brand from '../../components/Brand'
 import BlobField from '../../assets/illustrations/BlobField'
 
 const ROLES = [
   {
-    key: 'resident',
-    label: 'Resident',
-    sub: 'Take a quiz with a little help',
-    icon: Users,
-    to: '/quiz',
-  },
-  {
     key: 'staff',
     label: 'Staff',
-    sub: 'Run a quiz session',
+    sub: 'View your training plan and take quizzes',
     icon: UserCog,
     to: '/staff/login',
   },

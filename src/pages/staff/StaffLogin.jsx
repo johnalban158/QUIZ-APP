@@ -4,6 +4,7 @@ import { Lock, Mail, UserRound } from 'lucide-react'
 import { useAuth } from '../../context/AuthContext'
 import Brand from '../../components/Brand'
 import LoginOrbs from '../../assets/illustrations/LoginOrbs'
+import { isStaffRole } from '../../lib'
 
 export default function StaffLogin() {
   const navigate = useNavigate()
@@ -13,7 +14,7 @@ export default function StaffLogin() {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
-  if (user?.role === 'STAFF') return <Navigate to="/staff/dashboard" replace />
+  if (user && isStaffRole(user.role)) return <Navigate to="/staff/dashboard" replace />
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -21,8 +22,8 @@ export default function StaffLogin() {
     setLoading(true)
     try {
       const u = await staffLogin(email, password)
-      if (u.role !== 'STAFF') {
-        setError('That account is not a staff member.')
+      if (!isStaffRole(u.role)) {
+        setError('That account is not a nurse or caregiver.')
         return
       }
       navigate('/staff/dashboard')

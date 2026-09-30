@@ -2,6 +2,15 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Inbox, ListChecks } from 'lucide-react'
 import { api } from '../../api'
+import { roleLabel } from '../../lib'
+
+function staffLabel(sub) {
+  return sub.staffMember?.name ?? sub.staffName ?? sub.takerName ?? '—'
+}
+
+function staffRole(sub) {
+  return roleLabel(sub.staffMember?.role ?? sub.role ?? '')
+}
 
 export default function Submissions() {
   const navigate = useNavigate()
@@ -40,7 +49,7 @@ export default function Submissions() {
         <span className="section-head-icon"><ListChecks size={18} /></span>
         <div>
           <h1 style={{ margin: 0 }}>Submissions</h1>
-          <p className="page-sub">All quiz attempts — filter by module, sort by date or score.</p>
+          <p className="page-sub">Every nurse &amp; caregiver quiz attempt — filter by module, sort by date or score.</p>
         </div>
         {subs !== null && subs.length > 0 && (
           <span className="chip">{subs.length} attempt{subs.length === 1 ? '' : 's'}</span>
@@ -83,14 +92,14 @@ export default function Submissions() {
         <div className="card empty">
           <span className="empty-icon"><Inbox size={20} /></span>
           <h3>No submissions yet</h3>
-          <p>Submissions will appear here once someone takes a published quiz.</p>
+          <p>Submissions will appear here once a nurse or caregiver takes a published quiz.</p>
         </div>
       ) : (
         <div className="table-wrap">
           <table className="table">
             <thead>
               <tr>
-                <th>Name</th>
+                <th>Staff member</th>
                 <th>Module</th>
                 <th>Score</th>
                 <th>Date</th>
@@ -101,7 +110,12 @@ export default function Submissions() {
                 const p = s.total ? Math.round((s.score / s.total) * 100) : 0
                 return (
                   <tr key={s.id} style={{ cursor: 'pointer' }} onClick={() => navigate(`/admin/submissions/${s.id}`)}>
-                    <td style={{ fontWeight: 600 }}>{s.takerName}</td>
+                    <td>
+                      <div style={{ fontWeight: 600 }}>{staffLabel(s)}</div>
+                      {staffRole(s) && (
+                        <div className="muted" style={{ fontSize: '0.85rem' }}>{staffRole(s)}</div>
+                      )}
+                    </td>
                     <td>{s.module?.title ?? '—'}</td>
                     <td>
                       {s.score}/{s.total}{' '}
