@@ -452,17 +452,61 @@ selfRouter.get('/me/modules/:moduleId', async (req, res) => {
           options: { select: { id: true, text: true }, orderBy: { id: 'asc' } },
         },
       },
+      videoWatches: { where: { staffId: req.user.id } },
     },
   })
   if (!module) return res.status(404).json({ error: 'Module not found or not published' })
+
+  const watch = module.videoWatches[0] ?? null
 
   res.json({
     id: module.id,
     title: module.title,
     description: module.description,
     content: module.content,
+    youtubeUrl: module.youtubeUrl,
+    youtubeVideoId: module.youtubeVideoId,
+    videoRequired: module.videoRequired,
+    videoWatched: !!watch,
+    watchedAt: watch ? watch.watchedAt : null,
     questions: module.questions,
   })
+})
+
+// POST /api/staff/me/modules/:moduleId/video-watch - mark the module's
+// training video as watched (upsert: refreshes watchedAt / watchSeconds).
+selfRouter.post('/me/modules/:moduleId/video-watch', async (req, res) => {
+  const { moduleId } = req.params
+  const { watchSeconds } = req.body ?? {}
+
+  if (
+    watchSeconds !== undefined &&
+    watchSeconds !== null &&
+    (!Number.isInteger(watchSeconds) || watchSeconds < 0)
+  ) {
+    return res.status(400).json({ error: 'watchSeconds must be a non-negative integer' })
+  }
+
+  // Assignment required (same check as submit)
+  const assignment = await prisma.staffModuleAssignment.findUnique({
+    where: { staffId_moduleId: { staffId: req.user.id, moduleId } },
+  })
+  if (!assignment) return res.status(403).json({ error: 'Module is not assigned to you' })
+
+  const watch = await prisma.moduleVideoWatch.upsert({
+    where: { staffId_moduleId: { staffId: req.user.id, moduleId } },
+    create: {
+      staffId: req.user.id,
+      moduleId,
+      ...(watchSeconds !== undefined && watchSeconds !== null ? { watchSeconds } : {}),
+    },
+    update: {
+      watchedAt: new Date(),
+      ...(watchSeconds !== undefined && watchSeconds !== null ? { watchSeconds } : {}),
+    },
+  })
+
+  res.json({ watched: true, watchedAt: watch.watchedAt })
 })
 
 /**
@@ -551,6 +595,20 @@ selfRouter.post('/me/modules/:moduleId/submit', async (req, res) => {
     where: { staffId_moduleId: { staffId: req.user.id, moduleId: module.id } },
   })
   if (!assignment) return res.status(403).json({ error: 'Module is not assigned to you' })
+
+  // Training-video gate: a module marked videoRequired with a video attached
+  // can only be submitted after the staff member has a ModuleVideoWatch row.
+  if (module.videoRequired && module.youtubeVideoId) {
+    const watch = await prisma.moduleVideoWatch.findUnique({
+      where: { staffId_moduleId: { staffId: req.user.id, moduleId: module.id } },
+    })
+    if (!watch) {
+      return res.status(400).json({
+        error: 'Training video must be watched before taking the quiz',
+        code: 'VIDEO_REQUIRED',
+      })
+    }
+  }
 
   // Keep only answers that belong to this module (question + option pair).
   const questionById = new Map(module.questions.map((q) => [q.id, q]))

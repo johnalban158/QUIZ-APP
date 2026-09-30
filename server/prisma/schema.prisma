@@ -22,6 +22,7 @@ model User {
   completions      StaffModuleCompletion[]
   staffSubmissions Submission[]            @relation("StaffSubmissions")
   bugReports       BugReport[]
+  videoWatches     ModuleVideoWatch[]
 }
 
 // Bug reports submitted from the in-app "Report a bug" button (admin + staff).
@@ -52,12 +53,16 @@ model Module {
   createdAt         DateTime                @default(now())
   content           String                  @default("")
   sourceDocumentUrl String?
+  youtubeUrl        String?
+  youtubeVideoId    String?
+  videoRequired     Boolean                 @default(false)
   createdBy         User                    @relation(fields: [createdById], references: [id])
   eligibility       ModuleEligibility[]
   questions         Question[]
   assignments       StaffModuleAssignment[]
   completions       StaffModuleCompletion[]
   submissions       Submission[]
+  videoWatches      ModuleVideoWatch[]
 }
 
 model ModuleEligibility {
@@ -107,16 +112,16 @@ model StaffModuleCompletion {
 }
 
 model Question {
-  id             String             @id @default(cuid())
-  moduleId       String
-  text           String
-  orderIndex     Int                @default(0)
-  mediaUrl       String?
-  mediaType      QuestionMedia?
-  mediaPublicId  String?
-  module         Module             @relation(fields: [moduleId], references: [id], onDelete: Cascade)
-  options        QuestionOption[]
-  answerLines    SubmissionAnswer[]
+  id            String             @id @default(cuid())
+  moduleId      String
+  text          String
+  orderIndex    Int                @default(0)
+  mediaUrl      String?
+  mediaType     QuestionMedia?
+  mediaPublicId String?
+  module        Module             @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  options       QuestionOption[]
+  answerLines   SubmissionAnswer[]
 }
 
 model QuestionOption {
@@ -155,6 +160,20 @@ model SubmissionAnswer {
   question         Question       @relation(fields: [questionId], references: [id])
   selectedOption   QuestionOption @relation(fields: [selectedOptionId], references: [id])
   submission       Submission     @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+}
+
+model ModuleVideoWatch {
+  id           String   @id @default(cuid())
+  staffId      String
+  moduleId     String
+  watchedAt    DateTime @default(now())
+  watchSeconds Int?
+  staff        User     @relation(fields: [staffId], references: [id], onDelete: Cascade)
+  module       Module   @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+
+  @@unique([staffId, moduleId])
+  @@index([staffId])
+  @@index([moduleId])
 }
 
 enum Role {

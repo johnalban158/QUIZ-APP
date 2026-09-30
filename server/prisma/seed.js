@@ -36,7 +36,7 @@ const DEMO_STAFF_ROSTER = [
   { name: 'Aisha Johnson', email: 'aisha.johnson@quizapp.com', role: 'NURSE', specialty: 'PERSONAL_CARE_AIDE' },
 ]
 
-async function ensureModule({ title, description, content, status, createdById, questions }) {
+async function ensureModule({ title, description, content, status, createdById, questions, youtubeUrl, youtubeVideoId, videoRequired }) {
   let mod = await prisma.module.findFirst({ where: { title } })
   if (!mod) {
     mod = await prisma.module.create({
@@ -46,6 +46,9 @@ async function ensureModule({ title, description, content, status, createdById, 
         content,
         status,
         createdById,
+        youtubeUrl,
+        youtubeVideoId,
+        videoRequired,
         questions: { create: questions },
       },
     })
@@ -54,7 +57,7 @@ async function ensureModule({ title, description, content, status, createdById, 
     // Refresh demo content/status on re-seed so existing DBs pick up new fields.
     mod = await prisma.module.update({
       where: { id: mod.id },
-      data: { description, content, status },
+      data: { description, content, status, youtubeUrl, youtubeVideoId, videoRequired },
     })
     console.log(`Module already exists, refreshed content: ${title}`)
   }
@@ -230,6 +233,9 @@ async function main() {
     content: GENERAL_KNOWLEDGE_CONTENT,
     status: 'PUBLISHED',
     createdById: admin.id,
+    youtubeUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+    youtubeVideoId: 'dQw4w9WgXcQ',
+    videoRequired: true,
     questions: [
       {
         orderIndex: 0,

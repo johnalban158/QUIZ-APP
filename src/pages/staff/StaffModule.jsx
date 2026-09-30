@@ -1,11 +1,11 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
-import { ArrowLeft, Award, BookOpen, Play } from 'lucide-react'
+import { ArrowLeft, Award, BookOpen, CheckCircle2, Lock, Play, Video } from 'lucide-react'
 import { api } from '../../api'
 import { useAuth } from '../../context/AuthContext'
 import ReadAloud from '../../components/ReadAloud'
 import RoleBadge from '../../components/RoleBadge'
-import { formatDate } from '../../lib'
+import { extractYouTubeId, formatDate, formatDateTime, youTubeEmbedUrl } from '../../lib'
 
 export default function StaffModule() {
   const { id } = useParams()
@@ -15,11 +15,33 @@ export default function StaffModule() {
   const [result, setResult] = useState(null)
   const [attempts, setAttempts] = useState(0)
   const [error, setError] = useState('')
+  const [watchBusy, setWatchBusy] = useState(false)
+  const [watchError, setWatchError] = useState('')
+  // Set when the video player is first shown, so "mark as watched" can send
+  // an honest sense of how long the page has been open on the video.
+  const videoShownAt = useRef(null)
+
+  // Defensive: prefer the ID the API derived, fall back to reading it from the
+  // stored link so the player still renders if only the URL is returned.
+  const videoId = mod?.youtubeVideoId || extractYouTubeId(mod?.youtubeUrl)
+  const videoRequired = mod?.videoRequired === true
+  const videoWatched = mod?.videoWatched === true
+  const quizLocked = videoRequired && !videoWatched
+
+  useEffect(() => {
+    if (!videoId) return undefined
+    videoShownAt.current = Date.now()
+    return () => {
+      videoShownAt.current = null
+    }
+  }, [id, videoId])
 
   useEffect(() => {
     (async () => {
       setError('')
       try {
+        // Includes videoWatched / watchedAt — the video gate state is read
+        // from here so a refresh keeps the quiz unlocked.
         setMod(await api(`/staff/me/modules/${id}`))
       } catch (err) {
         setError(err.message || 'Failed to load module')
@@ -43,6 +65,33 @@ export default function StaffModule() {
       alive = false
     }
   }, [id])
+
+  const markWatched = async () => {
+    setWatchBusy(true)
+    setWatchError('')
+    try {
+      const watchSeconds = videoShownAt.current
+        ? Math.round((Date.now() - videoShownAt.current) / 1000)
+        : undefined
+      const data = await api(`/staff/me/modules/${id}/video-watch`, {
+        method: 'POST',
+        body: watchSeconds && watchSeconds > 0 ? { watchSeconds } : {},
+      })
+      setMod((prev) =>
+        prev
+          ? {
+              ...prev,
+              videoWatched: true,
+              watchedAt: data?.watchedAt ?? prev.watchedAt ?? new Date().toISOString(),
+            }
+          : prev
+      )
+    } catch (err) {
+      setWatchError(err.message || 'Could not save your progress — please try again.')
+    } finally {
+      setWatchBusy(false)
+    }
+  }
 
   if (error && !mod) {
     return (
@@ -82,6 +131,66 @@ export default function StaffModule() {
         </div>
       </div>
 
+      {videoId ? (
+        <div className="card video-card">
+          <div className="video-card-head">
+            <span className="section-head-icon"><Video size={18} /></span>
+            <div className="section-head-text">
+              <h2>Training Video</h2>
+            </div>
+            {videoRequired ? (
+              <span className="badge badge-bad">Required</span>
+            ) : (
+              <span className="badge badge-state">Optional</span>
+            )}
+          </div>
+
+          <div className="video-frame">
+            <iframe
+              src={youTubeEmbedUrl(videoId, 'rel=0')}
+              title={`Training video: ${mod.title}`}
+              loading="lazy"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+              allowFullScreen
+              referrerPolicy="strict-origin-when-cross-origin"
+            />
+          </div>
+
+          <div className="video-card-foot">
+            {videoWatched ? (
+              <span className="video-watch-state">
+                <CheckCircle2 size={18} /> Watched
+                {mod.watchedAt ? ` · ${formatDateTime(mod.watchedAt)}` : ''}
+              </span>
+            ) : (
+              <button className="btn btn-ghost" onClick={markWatched} disabled={watchBusy}>
+                <CheckCircle2 size={17} /> {watchBusy ? 'Saving…' : 'Mark as watched'}
+              </button>
+            )}
+            {videoRequired && !videoWatched && (
+              <span className="form-hint">Watch the video and mark as watched to unlock quiz</span>
+            )}
+          </div>
+          {watchError && <div className="form-error" role="alert" style={{ marginTop: 12 }}>{watchError}</div>}
+        </div>
+      ) : (
+        videoRequired && (
+          <div className="card video-card">
+            <div className="video-card-head">
+              <span className="section-head-icon"><Video size={18} /></span>
+              <div className="section-head-text">
+                <h2>Training Video</h2>
+              </div>
+              <span className="badge badge-bad">Required</span>
+            </div>
+            <p className="muted" style={{ margin: 0 }}>
+              The training video for this module hasn&apos;t been added yet. Ask your
+              administrator to add it, then come back.
+            </p>
+          </div>
+        )
+      )}
+
       {mod.content ? (
         <div className="card reading">
           <div className="quiz-reading-head">
@@ -119,9 +228,22 @@ export default function StaffModule() {
             Scoring at least 70% records a completion on your training record.
           </div>
         </div>
-        <button className="btn btn-primary btn-lg" onClick={() => navigate(`/staff/modules/${id}/quiz`)}>
-          <Play size={17} /> Begin quiz
-        </button>
+        <div className="quiz-start">
+          <button
+            className="btn btn-primary btn-lg"
+            onClick={() => navigate(`/staff/modules/${id}/quiz`)}
+            disabled={quizLocked}
+            aria-disabled={quizLocked}
+          >
+            {quizLocked ? <Lock size={17} /> : <Play size={17} />}
+            {quizLocked ? 'Quiz locked' : 'Begin quiz'}
+          </button>
+          {quizLocked && (
+            <p className="form-hint" style={{ margin: 0 }}>
+              Watch the video and mark as watched to unlock quiz
+            </p>
+          )}
+        </div>
       </div>
     </>
   )

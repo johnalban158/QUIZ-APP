@@ -17,7 +17,7 @@ import {
   X,
 } from 'lucide-react'
 import { api, getToken } from '../../api'
-import { SPECIALTIES } from '../../lib'
+import { SPECIALTIES, extractYouTubeId, normalizeYouTubeUrl, youTubeEmbedUrl } from '../../lib'
 
 const EMPTY_OPTIONS = [
   { text: '', isCorrect: false },
@@ -25,6 +25,9 @@ const EMPTY_OPTIONS = [
   { text: '', isCorrect: false },
   { text: '', isCorrect: false },
 ]
+
+const YT_URL_ERROR =
+  'That doesn’t look like a YouTube video link. Paste a watch link, a youtu.be short link, a /shorts link or an embed link.'
 
 export default function ModuleEditor() {
   const { id } = useParams()
@@ -43,6 +46,13 @@ export default function ModuleEditor() {
   const [adding, setAdding] = useState(false)
   const [addText, setAddText] = useState('')
   const [addOpts, setAddOpts] = useState(EMPTY_OPTIONS)
+  const [ytUrl, setYtUrl] = useState('')
+  const [videoRequired, setVideoRequired] = useState(false)
+  const [ytSaving, setYtSaving] = useState(false)
+  const [ytError, setYtError] = useState('')
+  const [ytSaved, setYtSaved] = useState(false)
+  // The URL hint waits for a blur so a half-typed link isn't scolded mid-keystroke.
+  const [ytTouched, setYtTouched] = useState(false)
   const fileRef = useRef(null)
   const mediaRefs = useRef({})
   const [mediaBusyId, setMediaBusyId] = useState(null)
@@ -80,6 +90,11 @@ export default function ModuleEditor() {
       setDescription(found.description ?? '')
       setContent(found.content ?? '')
       setSrcUrl(found.sourceDocumentUrl ?? '')
+      setYtUrl(found.youtubeUrl ?? '')
+      setVideoRequired(found.videoRequired === true)
+      setYtError('')
+      setYtSaved(false)
+      setYtTouched(false)
       setEligibility(
         (found.eligibility ?? []).map((e) => ({ specialty: e.specialty }))
       )
@@ -91,6 +106,72 @@ export default function ModuleEditor() {
   useEffect(() => {
     load()
   }, [id])
+
+  // The video ID is derived from the URL in the box with the same rules the
+  // API uses, so the preview always shows exactly what staff will get.
+  const ytId = extractYouTubeId(ytUrl)
+  const ytBlank = !ytUrl.trim()
+  const ytInvalid = !ytBlank && !ytId
+  const ytDirty =
+    ytUrl.trim() !== (mod?.youtubeUrl ?? '') ||
+    videoRequired !== (mod?.videoRequired === true)
+
+  const saveVideo = async () => {
+    if (ytInvalid) {
+      setYtTouched(true)
+      setYtError(YT_URL_ERROR)
+      return
+    }
+    setYtSaving(true)
+    setYtError('')
+    setYtSaved(false)
+    try {
+      // Send a link the API can parse: a missing scheme is added here so a
+      // "www.youtube.com/watch?v=…" paste saves instead of bouncing.
+      const nextUrl = ytUrl.trim() ? normalizeYouTubeUrl(ytUrl) : null
+      // A module can only require a video it actually has.
+      const nextRequired = Boolean(nextUrl) && videoRequired
+      const updated = await api(`/admin/modules/${id}`, {
+        method: 'PATCH',
+        body: { youtubeUrl: nextUrl, videoRequired: nextRequired },
+      })
+      setMod((prev) => ({ ...prev, ...(updated ?? {}) }))
+      if (updated && Object.prototype.hasOwnProperty.call(updated, 'youtubeUrl')) {
+        setYtUrl(updated.youtubeUrl ?? '')
+      }
+      setVideoRequired(
+        updated && typeof updated.videoRequired === 'boolean'
+          ? updated.videoRequired
+          : nextRequired
+      )
+      setYtSaved(true)
+    } catch (err) {
+      setYtError(err.message || 'Could not save the training video — please try again.')
+    } finally {
+      setYtSaving(false)
+    }
+  }
+
+  const clearVideo = async () => {
+    if (!window.confirm('Remove the training video from this module?')) return
+    setYtSaving(true)
+    setYtError('')
+    setYtSaved(false)
+    try {
+      const updated = await api(`/admin/modules/${id}`, {
+        method: 'PATCH',
+        body: { youtubeUrl: null, videoRequired: false },
+      })
+      setMod((prev) => ({ ...prev, ...(updated ?? {}) }))
+      setYtUrl('')
+      setVideoRequired(false)
+      setYtSaved(true)
+    } catch (err) {
+      setYtError(err.message || 'Could not remove the training video — please try again.')
+    } finally {
+      setYtSaving(false)
+    }
+  }
 
   const saveMeta = async () => {
     setError('')
@@ -368,6 +449,106 @@ export default function ModuleEditor() {
             <p className="form-hint" style={{ marginTop: 6 }}>
               Shown on the “Read before you start” screen at the beginning of the quiz flow.
             </p>
+          </div>
+
+          {/* training video (YouTube) */}
+          <div className="editor-section">
+            <div className="section-head">
+              <span className="section-head-icon"><Video size={18} /></span>
+              <div className="section-head-text">
+                <h2>Training video (YouTube)</h2>
+              </div>
+              {mod.videoRequired === true && <span className="badge badge-bad">Required</span>}
+            </div>
+            <p className="form-hint" style={{ marginBottom: 14 }}>
+              Paste a YouTube link and staff see the player at the top of this module. Regular
+              watch links, youtu.be short links and /shorts links are all supported.
+            </p>
+
+            <div className="field">
+              <label htmlFor="yt-url">YouTube link</label>
+              <input
+                id="yt-url"
+                className="input"
+                value={ytUrl}
+                onChange={(e) => {
+                  setYtUrl(e.target.value)
+                  setYtError('')
+                  setYtSaved(false)
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') { e.preventDefault(); saveVideo() }
+                }}
+                onBlur={() => setYtTouched(true)}
+                placeholder="https://www.youtube.com/watch?v=..."
+                autoComplete="off"
+                spellCheck="false"
+                inputMode="url"
+              />
+            </div>
+
+            {ytTouched && ytInvalid && !ytError && (
+              <p className="form-hint yt-preview-note" role="status">{YT_URL_ERROR}</p>
+            )}
+            {ytError && <div className="form-error" role="alert" style={{ marginTop: 10 }}>{ytError}</div>}
+
+            <div className="check-row">
+              <input
+                id="yt-required"
+                type="checkbox"
+                className="input-check"
+                checked={videoRequired && Boolean(ytId)}
+                disabled={!ytId}
+                onChange={(e) => { setVideoRequired(e.target.checked); setYtSaved(false) }}
+              />
+              <label htmlFor="yt-required">Require video before quiz</label>
+            </div>
+            {!ytId && (
+              <p className="form-hint" style={{ marginTop: 6 }}>
+                Add a valid link first — staff are only asked to watch a video that exists.
+              </p>
+            )}
+
+            <div className="yt-actions">
+              <button
+                className="btn btn-primary btn-sm"
+                onClick={saveVideo}
+                disabled={ytSaving || ytInvalid || (!ytDirty && !ytBlank)}
+              >
+                <Check size={15} /> {ytSaving ? 'Saving…' : 'Save video'}
+              </button>
+              {(ytUrl || mod.youtubeUrl) && (
+                <button
+                  className="btn btn-danger btn-sm"
+                  onClick={clearVideo}
+                  disabled={ytSaving}
+                >
+                  <Trash2 size={14} /> Clear video
+                </button>
+              )}
+              {ytSaved && !ytSaving && <span className="form-hint" role="status">Saved</span>}
+            </div>
+
+            {ytId ? (
+              <div className="yt-preview">
+                <div className="video-frame">
+                  <iframe
+                    src={youTubeEmbedUrl(ytId, 'rel=0')}
+                    title="Training video preview"
+                    loading="lazy"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                    allowFullScreen
+                    referrerPolicy="strict-origin-when-cross-origin"
+                  />
+                </div>
+                <p className="form-hint yt-preview-note">Preview · video ID {ytId}</p>
+              </div>
+            ) : (
+              <div className="yt-placeholder">
+                <Video size={20} />
+                <span className="muted">No training video yet — paste a YouTube link to add one.</span>
+              </div>
+            )}
           </div>
 
           {/* eligibility rules */}

@@ -3,6 +3,7 @@ import { prisma } from '../prisma.js'
 import { requireAdmin, STAFF_ROLES } from '../middleware/auth.js'
 import { upload, mediaUpload } from '../middleware/upload.js'
 import { cloudinaryConfigured, uploadBuffer, destroyAsset } from '../cloudinary.js'
+import { extractYouTubeVideoId } from '../utils/youtube.js'
 import path from 'path'
 import { fileURLToPath } from 'url'
 import fs from 'fs'
@@ -36,6 +37,51 @@ function normalizeOptions(options) {
     throw new Error('A question needs exactly one correct option')
   }
   return options.map((o) => ({ text: String(o.text ?? '').trim(), isCorrect: !!o.isCorrect }))
+}
+
+/**
+ * Build the { youtubeUrl, youtubeVideoId, videoRequired } subset of module
+ * data from a create/update body.
+ *
+ * - youtubeUrl null/''  -> clear both youtubeUrl and youtubeVideoId
+ * - youtubeUrl non-empty -> must parse to a video ID, else { error }
+ * - videoRequired true  -> requires a video ID (from this payload or the
+ *   existing module row), else { error }
+ *
+ * `existing` is the current module row ({} on create) so a PATCH that only
+ * flips videoRequired keeps validating against the stored video.
+ */
+function buildVideoFields(youtubeUrl, videoRequired, existing = {}) {
+  const data = {}
+
+  if (youtubeUrl !== undefined) {
+    if (youtubeUrl === null || youtubeUrl === '') {
+      data.youtubeUrl = null
+      data.youtubeVideoId = null
+    } else {
+      const videoId = extractYouTubeVideoId(youtubeUrl)
+      if (!videoId) return { error: 'Invalid YouTube URL' }
+      data.youtubeUrl = String(youtubeUrl).trim()
+      data.youtubeVideoId = videoId
+    }
+  }
+
+  const effectiveVideoId =
+    data.youtubeVideoId !== undefined ? data.youtubeVideoId : (existing.youtubeVideoId ?? null)
+  const effectiveRequired =
+    videoRequired !== undefined ? videoRequired : (existing.videoRequired ?? false)
+
+  // The module must never end up required-but-video-less: validate the
+  // effective flag (incoming when provided, otherwise the stored one) against
+  // the effective video (after any clear/replace in this payload).
+  if (effectiveRequired && !effectiveVideoId) {
+    return { error: 'videoRequired requires a valid youtubeUrl' }
+  }
+  if (typeof videoRequired === 'boolean') {
+    data.videoRequired = videoRequired
+  }
+
+  return { data }
 }
 
 async function enrichModulesWithStats(modules) {
@@ -88,10 +134,12 @@ router.get('/', async (req, res) => {
 })
 
 router.post('/', async (req, res) => {
-  const { title, description, status, content, eligibility } = req.body ?? {}
+  const { title, description, status, content, eligibility, youtubeUrl, videoRequired } = req.body ?? {}
   if (!title || !title.trim()) {
     return res.status(400).json({ error: 'Title is required' })
   }
+  const video = buildVideoFields(youtubeUrl, videoRequired)
+  if (video.error) return res.status(400).json({ error: video.error })
   const module = await prisma.module.create({
     data: {
       title: title.trim(),
@@ -100,6 +148,7 @@ router.post('/', async (req, res) => {
       content: content ?? '',
       createdById: req.user.id,
       eligibility: eligibility ? { create: eligibility } : undefined,
+      ...video.data,
     },
     include: withQuestions,
   })
@@ -107,7 +156,11 @@ router.post('/', async (req, res) => {
 })
 
 router.patch('/:id', async (req, res) => {
-  const { title, description, status, content, eligibility } = req.body ?? {}
+  const { title, description, status, content, eligibility, youtubeUrl, videoRequired } = req.body ?? {}
+
+  const existing = await prisma.module.findUnique({ where: { id: req.params.id } })
+  if (!existing) return res.status(404).json({ error: 'Module not found' })
+
   const data = {}
   if (typeof title === 'string') {
     if (!title.trim()) return res.status(400).json({ error: 'Title cannot be empty' })
@@ -116,6 +169,11 @@ router.patch('/:id', async (req, res) => {
   if (typeof description === 'string') data.description = description
   if (['DRAFT', 'PUBLISHED'].includes(status)) data.status = status
   if (typeof content === 'string') data.content = content
+
+  // Training video fields (youtubeUrl / videoRequired)
+  const video = buildVideoFields(youtubeUrl, videoRequired, existing)
+  if (video.error) return res.status(400).json({ error: video.error })
+  Object.assign(data, video.data)
 
   // Handle eligibility replacement if provided
   if (eligibility !== undefined) {
@@ -167,6 +225,9 @@ router.delete('/:id', async (req, res) => {
       // 5. Assignments + eligibility (also DB-cascade, deleted explicitly)
       await tx.staffModuleAssignment.deleteMany({ where: { moduleId } })
       await tx.moduleEligibility.deleteMany({ where: { moduleId } })
+      // 5b. Training-video watch records (DB-cascade via onDelete: Cascade,
+      // deleted explicitly to match the FK-safe ordering above)
+      await tx.moduleVideoWatch.deleteMany({ where: { moduleId } })
       // 6. Parent
       await tx.module.delete({ where: { id: moduleId } })
     })

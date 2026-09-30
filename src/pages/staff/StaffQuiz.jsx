@@ -9,15 +9,18 @@ import {
   CheckCircle,
   FileQuestion,
   LayoutList,
+  Lock,
   RotateCcw,
   Send,
   Timer,
   Trophy,
+  Video,
   WifiOff,
   XCircle,
 } from 'lucide-react'
 import ReadAloud from '../../components/ReadAloud'
 import { api } from '../../api'
+import { extractYouTubeId } from '../../lib'
 
 const PASS_MARK = 70
 
@@ -56,6 +59,11 @@ export default function StaffQuiz() {
   const inProgress = phase === 'questions' && answeredCount > 0
   const blocker = useBlocker(inProgress)
 
+  // The training-video gate. The API is the source of truth, but the intro
+  // blocks up front so staff get a friendly screen instead of a failed submit.
+  const videoId = mod?.youtubeVideoId || extractYouTubeId(mod?.youtubeUrl)
+  const videoLocked = mod?.videoRequired === true && mod?.videoWatched !== true
+
   useEffect(() => {
     if (!inProgress) return undefined
     const handler = (e) => {
@@ -74,6 +82,7 @@ export default function StaffQuiz() {
   })
 
   const start = () => {
+    if (videoLocked) return
     setStartedAt((prev) => prev ?? Date.now())
     setSubmitError('')
     setPhase('questions')
@@ -113,6 +122,25 @@ export default function StaffQuiz() {
       setResult(data)
       setPhase('result')
     } catch (err) {
+      // A 400 can be the video gate (VIDEO_REQUIRED) rather than a bad answer
+      // payload. Re-read the module so the user gets the unlock screen with a
+      // link back to the video instead of a raw error.
+      if (err?.status === 400) {
+        let detail = null
+        try {
+          detail = await api(`/staff/me/modules/${id}`)
+        } catch {
+          // Keep the original error if the re-read fails.
+        }
+        if (detail && detail.videoRequired === true && detail.videoWatched !== true) {
+          setMod(detail)
+          setAnswers({})
+          setConfirmSubmit(false)
+          setSubmitError('')
+          setPhase('intro')
+          return
+        }
+      }
       setSubmitError(err.message || 'Could not submit your quiz — please try again.')
     } finally {
       setSubmitting(false)
@@ -157,6 +185,37 @@ export default function StaffQuiz() {
     )
   }
 
+  // ---- Video gate -------------------------------------------------------
+  if (videoLocked) {
+    return (
+      <div className="quiz-shell">
+        <Link to={`/staff/modules/${id}`} className="back-link">
+          <ArrowLeft size={16} /> Back to module
+        </Link>
+
+        <div className="card empty" role="alert">
+          <span className="empty-icon">
+            {videoId ? <Video size={26} /> : <Lock size={26} />}
+          </span>
+          <h3>Watch the training video first</h3>
+          <p>
+            {videoId
+              ? 'This module has a required training video. Watch it on the module page and mark it as watched, then you can start the quiz.'
+              : 'This module requires a training video that hasn’t been added yet. Ask your administrator to add it, then come back.'}
+          </p>
+          <div className="result-actions" style={{ justifyContent: 'center' }}>
+            <Link className="btn btn-primary" to={`/staff/modules/${id}`}>
+              <Video size={18} /> Go to the training video
+            </Link>
+            <Link className="btn btn-ghost" to="/staff/dashboard">
+              <LayoutList size={18} /> My dashboard
+            </Link>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   // ---- Intro ------------------------------------------------------------
   if (phase === 'intro') {
     const introReadText = [mod.title, mod.description, mod.content].filter(Boolean).join('. ')
@@ -174,6 +233,12 @@ export default function StaffQuiz() {
           <div className="quiz-intro-meta">
             <span className="badge badge-soft"><FileQuestion size={14} /> {total} questions</span>
             <span className="badge badge-draft"><Timer size={14} /> ~{Math.max(1, Math.round(total * 0.5))} min</span>
+            {videoId && !mod.videoRequired && (
+              <span className="badge badge-state"><Video size={14} /> Optional training video</span>
+            )}
+            {mod.videoRequired === true && (
+              <span className="badge badge-ok"><CheckCircle size={14} /> Training video watched</span>
+            )}
           </div>
 
           {mod.content ? (

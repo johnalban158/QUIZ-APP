@@ -4921,6 +4921,156 @@ textarea:focus-visible {
   z-index: 1;
 }
 
+/* =====================================================================
+   Training video (YouTube) — admin editor + staff module
+   ===================================================================== */
+/* Responsive 16:9 player shell. The iframe is absolutely positioned so the
+   frame keeps its ratio on phones, tablets and desktop without JS. */
+.video-frame {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  background: var(--ink);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  overflow: hidden;
+}
+
+.video-frame iframe {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  border: 0;
+}
+
+/* Staff module: video sits above the reading card */
+.video-card {
+  margin-bottom: 20px;
+}
+
+.video-card-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 14px;
+}
+
+.video-card-head h2 {
+  font-size: 1.2rem;
+}
+
+.video-card-foot {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 16px;
+}
+
+.video-watch-state {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: var(--ok);
+}
+
+/* Admin editor: link box, actions and live preview */
+.yt-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 14px;
+}
+
+.yt-preview {
+  margin-top: 18px;
+}
+
+.yt-preview-note {
+  margin-top: 8px;
+}
+
+.yt-placeholder {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 18px;
+  padding: 18px;
+  border: 1px dashed var(--border);
+  border-radius: 14px;
+  background: var(--surface-2);
+  color: var(--muted);
+  font-size: 0.95rem;
+}
+
+/* Labelled checkbox row (require video before quiz) */
+.check-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 16px;
+  cursor: pointer;
+}
+
+/* Roomier tap target than the 16px table checkboxes */
+.check-row .input-check {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+}
+
+.check-row label {
+  margin: 0;
+  font-weight: 600;
+}
+
+.check-row input:disabled {
+  cursor: not-allowed;
+}
+
+.check-row input:disabled + label {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+/* Quiz CTA + its lock hint, stacked on the right of the reading footer */
+.quiz-start {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+  max-width: 100%;
+}
+
+.quiz-start .form-hint {
+  text-align: right;
+}
+
+@media (max-width: 640px) {
+  .quiz-start {
+    align-items: stretch;
+    width: 100%;
+  }
+
+  .quiz-start .btn {
+    width: 100%;
+  }
+
+  .quiz-start .form-hint {
+    text-align: center;
+  }
+
+  .video-card-head h2 {
+    font-size: 1.1rem;
+  }
+}
+
 .quiz-intro-icon {
   background: var(--accent-soft);
   color: var(--accent);

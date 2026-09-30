@@ -56,6 +56,10 @@ A frozen account (`isActive === false`) yields `401` on **every** authed request
 - **Quiz grading**: server-side only. Correct option IDs are never sent to a client
   before submission.
 - **Video media**: `<= 600s (10:00)`, max 50 MB, `audio/*` or `video/*`.
+- **Training videos**: a module may carry a YouTube URL (`youtubeUrl` + extracted
+  `youtubeVideoId`) and a `videoRequired` flag. `videoRequired: true` requires a valid
+  video; clearing the URL while required is `400`. A required module can only be
+  submitted after the staff member has a `ModuleVideoWatch` row (see §2.6b).
 - **Document uploads**: PDF, DOCX, PPT, PPTX, TXT; max 25 MB; stored at `server/uploads/`, served from `/uploads/...`.
 - **Removed by refactor** (must 404, never 200): public quiz list/detail/submit,
   staff-picker, resident/senior profile endpoints, public self-registration.
@@ -77,9 +81,10 @@ A frozen account (`isActive === false`) yields `401` on **every** authed request
 |---|---|---|---|
 | `GET` | `/api/staff/me` | staff | Own profile + progress + completions |
 | `GET` | `/api/staff/me/modules` | staff | Own assignments with status |
-| `GET` | `/api/staff/me/modules/:moduleId` | staff | Study/take view (no correct flags) |
+| `GET` | `/api/staff/me/modules/:moduleId` | staff | Study/take view (no correct flags) + video state |
 | `GET` | `/api/staff/me/modules/:moduleId/results` | staff | Past attempts |
-| `POST` | `/api/staff/me/modules/:moduleId/submit` | staff | Grade + record an attempt |
+| `POST` | `/api/staff/me/modules/:moduleId/submit` | staff | Grade + record an attempt (video-gated) |
+| `POST` | `/api/staff/me/modules/:moduleId/video-watch` | staff | Mark training video watched (upsert) |
 
 ### Admin — staff roster
 | Method | Path | Auth | Purpose |
@@ -96,7 +101,7 @@ A frozen account (`isActive === false`) yields `401` on **every** authed request
 |---|---|---|---|
 | `GET` | `/api/admin/modules` | admin | All modules incl. questions |
 | `POST` | `/api/admin/modules` | admin | Create module |
-| `PATCH` | `/api/admin/modules/:id` | admin | Update title/description/status/content/eligibility |
+| `PATCH` | `/api/admin/modules/:id` | admin | Update title/description/status/content/eligibility/youtubeUrl/videoRequired |
 | `DELETE` | `/api/admin/modules/:id` | admin | Delete module + dependents |
 | `GET` | `/api/admin/modules/eligible` | admin | Modules eligible for given staff IDs |
 | `POST` | `/api/admin/modules/:id/upload` | admin | Attach source document (multipart `file`) |
@@ -262,6 +267,11 @@ Auth: staff. Module must be **assigned** to the caller and **PUBLISHED**.
   "title": "Safe Transfers",
   "description": "string",
   "content": "markdown/study text",
+  "youtubeUrl": "https://www.youtube.com/watch?v=videoId",
+  "youtubeVideoId": "videoId",
+  "videoRequired": true,
+  "videoWatched": false,
+  "watchedAt": null,
   "questions": [
     {
       "id": "questionCuid",
@@ -278,6 +288,9 @@ Auth: staff. Module must be **assigned** to the caller and **PUBLISHED**.
 }
 ```
 **No `isCorrect` field anywhere.** `options` ordered by `id asc`, `questions` by `orderIndex asc`.
+`youtubeUrl` / `youtubeVideoId` / `videoRequired` are `null`/`false` when the module has no
+training video. `videoWatched` is whether the caller has a `ModuleVideoWatch` row for this
+module; `watchedAt` is that row's `watchedAt` (or `null`).
 Errors: `404 { "error": "Module not assigned to you" }`, `404 { "error": "Module not found or not published" }`.
 
 ### 2.6 `POST /api/staff/me/modules/:moduleId/submit` ★
@@ -323,8 +336,31 @@ Responses:
 - `400 { "error": "answers must be a non-empty array of { questionId, selectedOptionId }" }`
 - `400 { "error": "timeTakenSeconds must be a non-negative integer" }`
 - `400 { "error": "answers must reference this module's questions and options" }`
+- `400 { "error": "Training video must be watched before taking the quiz", "code": "VIDEO_REQUIRED" }`
+  — only when the module has `videoRequired: true` and a `youtubeVideoId`, and the caller
+  has no `ModuleVideoWatch` row for this module.
 - `403 { "error": "Module is not assigned to you" }`
 - `404 { "error": "Module not found or not published" }`
+
+### 2.6b `POST /api/staff/me/modules/:moduleId/video-watch` ★
+
+Auth: staff. Module must be **assigned** to the caller. Upserts a `ModuleVideoWatch`
+row (one per staff+module): creates it on first call, otherwise refreshes `watchedAt`
+(and `watchSeconds` when supplied).
+
+Request:
+```json
+{ "watchSeconds": 95 }
+```
+- `watchSeconds` optional non-negative integer.
+
+Responses:
+- `200`:
+```json
+{ "watched": true, "watchedAt": "2026-09-30T10:15:00.000Z" }
+```
+- `400 { "error": "watchSeconds must be a non-negative integer" }`
+- `403 { "error": "Module is not assigned to you" }`
 
 ### 2.7 `GET /api/staff/me/modules/:moduleId/results` ★
 
@@ -464,6 +500,9 @@ Auth: admin. Returns an **array** of modules (not enveloped):
     "status": "DRAFT | PUBLISHED",
     "content": "...",
     "sourceDocumentUrl": "/uploads/....pdf" ,
+    "youtubeUrl": "https://www.youtube.com/watch?v=videoId",
+    "youtubeVideoId": "videoId",
+    "videoRequired": true,
     "createdAt": "...", "updatedAt": "...",
     "eligibility": [ { "specialty": "HOME_HEALTH_AIDE" } ],
     "questions": [
@@ -480,14 +519,25 @@ Auth: admin. Returns an **array** of modules (not enveloped):
 ]
 ```
 `avgScore` / `lastSubmittedAt` are `null` when the module has no submissions.
-Ordered by `createdAt desc`.
+`youtubeUrl` / `youtubeVideoId` are `null` and `videoRequired` is `false` when the module
+has no training video. Ordered by `createdAt desc`.
 
-`POST /api/admin/modules` — body `{ title (required), description?, status?, content?, eligibility? }`
+`POST /api/admin/modules` — body `{ title (required), description?, status?, content?, eligibility?, youtubeUrl?, videoRequired? }`
 → `201` with the full module object above.
 
 `PATCH /api/admin/modules/:id` — partial: `title`, `description`, `status`
-(`DRAFT|PUBLISHED`), `content`, `eligibility` (array of `{ specialty }`, **replaces** all rows).
+(`DRAFT|PUBLISHED`), `content`, `eligibility` (array of `{ specialty }`, **replaces** all rows),
+`youtubeUrl`, `videoRequired`.
 → `200` full module object. `400 { "error": "Title cannot be empty" }`.
+
+Training-video rules (create + update):
+- `youtubeUrl` accepts watch / youtu.be / embed / shorts / v / live URLs or a bare
+  11-character video ID; the ID is extracted into `youtubeVideoId`.
+- `youtubeUrl: null` or `""` clears both `youtubeUrl` and `youtubeVideoId`.
+- `400 { "error": "Invalid YouTube URL" }` when a non-empty `youtubeUrl` cannot be parsed.
+- `400 { "error": "videoRequired requires a valid youtubeUrl" }` when the effective
+  `videoRequired` is `true` but there is no video (from this payload or the stored row) —
+  e.g. clearing the URL while the module is still required.
 
 `DELETE /api/admin/modules/:id` → `200 { "ok": true }`, `404 { "error": "Module not found" }`.
 
