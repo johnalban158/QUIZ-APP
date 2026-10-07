@@ -1,0 +1,42 @@
+{
+  "name": "app",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "concurrently -n server,web -c blue,magenta \"npm run dev:server\" \"npm run dev:web\"",
+    "dev:server": "npm --prefix server run dev",
+    "dev:web": "vite",
+    "build": "tsc -b && vite build",
+    "build:mobile": "vite build",
+    "cap:sync": "cap sync android",
+    "lint": "oxlint",
+    "preview": "vite preview",
+    "tauri": "tauri",
+    "tauri:dev": "tauri dev",
+    "tauri:build": "tauri build"
+  },
+  "dependencies": {
+    "@capacitor/android": "^7.6.9",
+    "@capacitor/cli": "^7.6.9",
+    "@capacitor/core": "^7.6.9",
+    "@tailwindcss/vite": "^4.3.3",
+    "lucide-react": "^1.46.0",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8",
+    "react-router-dom": "^7.18.4",
+    "tailwindcss": "^4.3.3",
+    "zustand": "^5.0.15"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^2.11.4",
+    "@types/node": "^24.13.3",
+    "@types/react": "^19.2.18",
+    "@types/react-dom": "^19.2.7",
+    "@vitejs/plugin-react": "^6.1.1",
+    "concurrently": "^10.0.5",
+    "oxlint": "^1.81.0",
+    "typescript": "~6.0.2",
+    "vite": "^8.3.0"
+  }
+}

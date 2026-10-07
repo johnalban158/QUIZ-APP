@@ -1,0 +1,199 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id               String                  @id @default(cuid())
+  name             String
+  email            String                  @unique
+  passwordHash     String
+  role             Role                    @default(NURSE)
+  isActive         Boolean                 @default(true)
+  createdAt        DateTime                @default(now())
+  specialty        Specialty?
+  modules          Module[]
+  assignmentsGiven StaffModuleAssignment[] @relation("AssignmentsBy")
+  assignments      StaffModuleAssignment[]
+  completions      StaffModuleCompletion[]
+  staffSubmissions Submission[]            @relation("StaffSubmissions")
+  bugReports       BugReport[]
+  videoWatches     ModuleVideoWatch[]
+}
+
+// Bug reports submitted from the in-app "Report a bug" button (admin + staff).
+// Always persisted to the DB; emailed to the owner when SMTP is configured.
+model BugReport {
+  id        String   @id @default(cuid())
+  userId    String?
+  userName  String
+  userEmail String?
+  role      Role?
+  category  String   @default("GENERAL")
+  message   String
+  pageUrl   String?
+  userAgent String?
+  emailed   Boolean  @default(false)
+  createdAt DateTime @default(now())
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([createdAt])
+}
+
+model Module {
+  id                String                  @id @default(cuid())
+  title             String
+  description       String                  @default("")
+  status            ModuleStatus            @default(DRAFT)
+  createdById       String
+  createdAt         DateTime                @default(now())
+  content           String                  @default("")
+  sourceDocumentUrl String?
+  youtubeUrl        String?
+  youtubeVideoId    String?
+  videoRequired     Boolean                 @default(false)
+  createdBy         User                    @relation(fields: [createdById], references: [id])
+  eligibility       ModuleEligibility[]
+  questions         Question[]
+  assignments       StaffModuleAssignment[]
+  completions       StaffModuleCompletion[]
+  submissions       Submission[]
+  videoWatches      ModuleVideoWatch[]
+}
+
+model ModuleEligibility {
+  id        String    @id @default(cuid())
+  moduleId  String
+  specialty Specialty
+  module    Module    @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+
+  @@unique([moduleId, specialty])
+  @@index([specialty])
+}
+
+model StaffModuleAssignment {
+  id           String                 @id @default(cuid())
+  staffId      String
+  moduleId     String
+  assignedAt   DateTime               @default(now())
+  assignedById String
+  assignedBy   User                   @relation("AssignmentsBy", fields: [assignedById], references: [id])
+  module       Module                 @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  staff        User                   @relation(fields: [staffId], references: [id], onDelete: Cascade)
+  completion   StaffModuleCompletion?
+
+  @@unique([staffId, moduleId])
+  @@index([staffId])
+  @@index([moduleId])
+}
+
+model StaffModuleCompletion {
+  id              String                @id @default(cuid())
+  staffId         String
+  moduleId        String
+  submissionId    String                @unique
+  score           Int
+  total           Int
+  percent         Int
+  passed          Boolean
+  completedAt     DateTime              @default(now())
+  module          Module                @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  staff           User                  @relation(fields: [staffId], references: [id], onDelete: Cascade)
+  staffAssignment StaffModuleAssignment @relation(fields: [staffId, moduleId], references: [staffId, moduleId])
+  submission      Submission            @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+
+  @@unique([staffId, moduleId])
+  @@index([staffId])
+  @@index([moduleId])
+}
+
+model Question {
+  id            String             @id @default(cuid())
+  moduleId      String
+  text          String
+  orderIndex    Int                @default(0)
+  mediaUrl      String?
+  mediaType     QuestionMedia?
+  mediaPublicId String?
+  module        Module             @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  options       QuestionOption[]
+  answerLines   SubmissionAnswer[]
+}
+
+model QuestionOption {
+  id         String             @id @default(cuid())
+  questionId String
+  text       String
+  isCorrect  Boolean            @default(false)
+  question   Question           @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  answers    SubmissionAnswer[]
+}
+
+model Submission {
+  id               String                 @id @default(cuid())
+  moduleId         String
+  takerName        String
+  takerEmail       String?
+  score            Int
+  total            Int
+  submittedAt      DateTime               @default(now())
+  timeTakenSeconds Int?
+  staffMemberId    String?
+  completion       StaffModuleCompletion?
+  module           Module                 @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  staffMember      User?                  @relation("StaffSubmissions", fields: [staffMemberId], references: [id])
+  answers          SubmissionAnswer[]
+
+  @@index([staffMemberId])
+}
+
+model SubmissionAnswer {
+  id               String         @id @default(cuid())
+  submissionId     String
+  questionId       String
+  selectedOptionId String
+  isCorrect        Boolean
+  question         Question       @relation(fields: [questionId], references: [id])
+  selectedOption   QuestionOption @relation(fields: [selectedOptionId], references: [id])
+  submission       Submission     @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+}
+
+model ModuleVideoWatch {
+  id           String   @id @default(cuid())
+  staffId      String
+  moduleId     String
+  watchedAt    DateTime @default(now())
+  watchSeconds Int?
+  staff        User     @relation(fields: [staffId], references: [id], onDelete: Cascade)
+  module       Module   @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+
+  @@unique([staffId, moduleId])
+  @@index([staffId])
+  @@index([moduleId])
+}
+
+enum Role {
+  ADMIN
+  NURSE
+  CAREGIVER
+}
+
+enum Specialty {
+  HOME_HEALTH_AIDE
+  PERSONAL_CARE_AIDE
+  COMPANION_RESPITE_AIDE
+}
+
+enum ModuleStatus {
+  DRAFT
+  PUBLISHED
+}
+
+enum QuestionMedia {
+  AUDIO
+  VIDEO
+}
