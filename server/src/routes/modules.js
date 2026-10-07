@@ -4,6 +4,7 @@ import { requireAdmin, STAFF_ROLES } from '../middleware/auth.js'
 import { upload, mediaUpload } from '../middleware/upload.js'
 import { cloudinaryConfigured, uploadBuffer, destroyAsset } from '../cloudinary.js'
 import { extractYouTubeVideoId } from '../utils/youtube.js'
+import { extractSourceText, buildDraftQuestions } from '../utils/extractText.js'
 import path from 'path'
 import { fileURLToPath } from 'url'
 import fs from 'fs'
@@ -282,6 +283,9 @@ router.get('/eligible', async (req, res) => {
 })
 
 // POST /api/admin/modules/:id/upload - Upload source document
+// Stores the file as Module.sourceDocumentUrl, extracts text for
+// PDF/DOCX/PPTX/TXT, fills Module.content when empty, and returns draft
+// question suggestions (not auto-inserted - admin reviews first).
 router.post('/:id/upload', upload.single('file'), async (req, res) => {
   if (!req.file) return res.status(400).json({ error: 'No file uploaded' })
 
@@ -295,12 +299,81 @@ router.post('/:id/upload', upload.single('file'), async (req, res) => {
   }
 
   const url = `/uploads/${req.file.filename}`
+  const filePath = path.join(uploadDir, req.file.filename)
+
+  let extractedChars = 0
+  let preview = ''
+  let suggestions = []
+  let parseNote = null
+  try {
+    const text = await extractSourceText(filePath, req.file.mimetype, req.file.originalname)
+    const cleaned = (text || '').trim().slice(0, 20000)
+    extractedChars = cleaned.length
+    preview = cleaned.slice(0, 500)
+    suggestions = buildDraftQuestions(cleaned, 8)
+    // Best-practice storage: file stays as the module attachment,
+    // extracted text becomes searchable study content when empty.
+    if (cleaned && !module.content) {
+      await prisma.module.update({
+        where: { id: module.id },
+        data: { content: cleaned.slice(0, 8000) },
+      })
+    }
+  } catch (e) {
+    if (e.code === 'LEGACY_PPT') parseNote = e.message
+    else parseNote = 'File stored, but text extraction failed. You can still add questions manually.'
+  }
+
   await prisma.module.update({
     where: { id: module.id },
     data: { sourceDocumentUrl: url },
   })
 
-  res.json({ ok: true, url, filename: req.file.filename })
+  res.json({ ok: true, url, filename: req.file.filename, extractedChars, preview, suggestions, parseNote })
+})
+
+// POST /api/admin/modules/:id/questions/generate - Parse stored source
+// document and insert draft questions (admin can still edit/delete/reorder).
+router.post('/:id/questions/generate', async (req, res) => {
+  const count = Math.min(Math.max(Number(req.body?.count) || 8, 1), 20)
+  const module = await prisma.module.findUnique({ where: { id: req.params.id } })
+  if (!module) return res.status(404).json({ error: 'Module not found' })
+  if (!module.sourceDocumentUrl) {
+    return res.status(400).json({ error: 'Upload a source document first (PDF, DOCX, PPTX, or TXT).' })
+  }
+  const filePath = path.join(uploadDir, path.basename(module.sourceDocumentUrl))
+  if (!fs.existsSync(filePath)) return res.status(404).json({ error: 'Source file missing on server.' })
+
+  let text = ''
+  try {
+    text = await extractSourceText(filePath, '', module.sourceDocumentUrl)
+  } catch (e) {
+    return res.status(400).json({ error: e.message })
+  }
+  const cleaned = (text || '').trim()
+  if (cleaned.length < 100) {
+    return res.status(400).json({ error: 'Not enough readable text in the file to generate questions.' })
+  }
+  const drafts = buildDraftQuestions(cleaned, count)
+  if (drafts.length === 0) {
+    return res.status(400).json({ error: 'Could not build questions from this file. Add questions manually.' })
+  }
+  const existing = await prisma.question.count({ where: { moduleId: module.id } })
+  const created = []
+  for (let i = 0; i < drafts.length; i++) {
+    const d = drafts[i]
+    const q = await prisma.question.create({
+      data: {
+        moduleId: module.id,
+        text: d.text,
+        orderIndex: existing + i,
+        options: { create: d.options },
+      },
+      include: { options: true },
+    })
+    created.push(q)
+  }
+  res.status(201).json({ ok: true, count: created.length, questions: created })
 })
 
 // DELETE /api/admin/modules/:id/upload - Delete source document

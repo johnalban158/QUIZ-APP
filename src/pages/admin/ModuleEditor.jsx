@@ -39,6 +39,8 @@ export default function ModuleEditor() {
   const [eligSaving, setEligSaving] = useState(false)
   const [srcUrl, setSrcUrl] = useState('')
   const [uploading, setUploading] = useState(false)
+  const [generating, setGenerating] = useState(false)
+  const [genInfo, setGenInfo] = useState('')
   const [error, setError] = useState('')
   const [editingId, setEditingId] = useState(null)
   const [editText, setEditText] = useState('')
@@ -215,6 +217,7 @@ export default function ModuleEditor() {
   const uploadSource = async (file) => {
     setUploading(true)
     setError('')
+    setGenInfo('')
     try {
       const form = new FormData()
       form.append('file', file)
@@ -226,10 +229,33 @@ export default function ModuleEditor() {
       const data = await res.json().catch(() => ({}))
       if (!res.ok) throw new Error(data.error || `Upload failed (${res.status})`)
       setSrcUrl(data.url)
+      if (data.parseNote) setGenInfo(data.parseNote)
+      else if (data.extractedChars) {
+        setGenInfo(`Stored. Extracted ~${data.extractedChars} characters - use “Generate questions” below to create drafts you can edit.`)
+      }
+      await load()
     } catch (err) {
       setError(err.message)
     } finally {
       setUploading(false)
+    }
+  }
+
+  const generateQuestions = async () => {
+    setGenerating(true)
+    setError('')
+    setGenInfo('')
+    try {
+      const data = await api(`/admin/modules/${id}/questions/generate`, {
+        method: 'POST',
+        body: { count: 8 },
+      })
+      setGenInfo(`Generated ${data.count} draft question(s) - review, edit, or delete below.`)
+      await load()
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setGenerating(false)
     }
   }
 
@@ -618,7 +644,7 @@ export default function ModuleEditor() {
               </div>
             </div>
             <p className="form-hint" style={{ marginBottom: 14 }}>
-              Attach the source material (PDF, DOCX, or TXT, up to 10 MB) this module is based on.
+              Attach the source material (PDF, DOCX, PPT/PPTX, or TXT, up to 25 MB) this module is based on. After upload you can auto-generate draft questions below.
             </p>
 
             {srcUrl ? (
@@ -637,7 +663,7 @@ export default function ModuleEditor() {
                 <input
                   ref={fileRef}
                   type="file"
-                  accept=".pdf,.docx,.txt,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain"
+                  accept=".pdf,.docx,.ppt,.pptx,.txt,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.openxmlformats-officedocument.presentationml.presentation,application/vnd.ms-powerpoint,text/plain"
                   onChange={async (e) => {
                     const file = e.target.files?.[0]
                     if (file) await uploadSource(file)
@@ -647,6 +673,14 @@ export default function ModuleEditor() {
                 <button className="btn btn-primary btn-sm" onClick={() => fileRef.current?.click()} disabled={uploading}>
                   <Upload size={15} /> {uploading ? 'Uploading…' : 'Choose & upload'}
                 </button>
+              </div>
+            )}
+            {srcUrl && (
+              <div style={{ marginTop: 12 }}>
+                <button className="btn btn-primary btn-sm" onClick={generateQuestions} disabled={generating}>
+                  <FileQuestion size={15} /> {generating ? 'Generating…' : 'Generate questions from document'}
+                </button>
+                {genInfo && <p className="form-hint" style={{ marginTop: 8 }}>{genInfo}</p>}
               </div>
             )}
           </div>
