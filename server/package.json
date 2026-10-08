@@ -9,6 +9,7 @@
     "db:push": "prisma db push",
     "db:migrate": "prisma migrate dev",
     "db:seed": "node prisma/seed.js",
+    "admin:create": "node scripts/create-admin.mjs",
     "db:backup": "node scripts/backup-db.mjs"
   },
   "dependencies": {

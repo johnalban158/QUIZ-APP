@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { ArrowRight, Shield, UserCog } from 'lucide-react'
 import Brand from '../../components/Brand'
 import BlobField from '../../assets/illustrations/BlobField'
@@ -73,7 +73,7 @@ export default function RoleSelect() {
           </div>
         </section>
       </div>
-      <footer className="site-footer">Goodwill Caring Care Academy · built with React + Express</footer>
+      <footer className="site-footer">Goodwill Caring Care Academy · built with React + Express · <Link to="/help" style={{ textDecoration: 'underline' }}>How to use the app</Link></footer>
     </>
   )
 }

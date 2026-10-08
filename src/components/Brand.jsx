@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link, NavLink, useNavigate } from 'react-router-dom'
-import { ArrowLeft, BookOpen, GraduationCap, LogOut, Moon, Shield, Sun } from 'lucide-react'
+import { ArrowLeft, BookOpen, LogOut, Moon, Shield, Sun } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { isStaffRole } from '../lib'
 
@@ -40,10 +40,6 @@ export default function Brand({ right, back, backLabel }) {
             <ArrowLeft size={22} />
           </Link>
         ) : null}
-
-        <Link to="/" className="brand-logo" aria-label="Goodwill Caring Health Services home">
-          <GraduationCap size={24} strokeWidth={2.5} />
-        </Link>
 
         <Link to="/" className="brand-name">
           Goodwill Caring Health Services

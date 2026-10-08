@@ -17,7 +17,33 @@ const __dirname = path.dirname(__filename)
 const app = express()
 const PORT = process.env.PORT || 4000
 
-app.use(cors())
+// CORS allow-list: the deployed frontend URL(s) plus local dev and the
+// Capacitor/Android webview origins (which send `capacitor://localhost`).
+// Set FRONTEND_URL (or CORS_ORIGINS, comma-separated) in production.
+const envOrigins = (process.env.CORS_ORIGINS || process.env.FRONTEND_URL || '')
+  .split(',')
+  .map((s) => s.trim())
+  .filter(Boolean)
+const allowList = new Set([
+  ...envOrigins,
+  'http://localhost:5173',
+  'http://localhost:4000',
+  'https://localhost',
+  'capacitor://localhost',
+])
+
+app.use(cors({
+  origin(origin, callback) {
+    if (!origin || allowList.has(origin)) return callback(null, true)
+    try {
+      const u = new URL(origin)
+      if (u.protocol === 'capacitor:' || u.hostname === 'localhost' || u.hostname === '127.0.0.1') {
+        return callback(null, true)
+      }
+    } catch { /* fall through to block */ }
+    return callback(new Error(`CORS blocked for origin ${origin}`))
+  },
+}))
 app.use(express.json())
 
 // Serve uploaded files
@@ -52,6 +78,9 @@ app.use('/api', (req, res) => res.status(404).json({ error: 'Not found' }))
 
 app.use((err, req, res, _next) => {
   console.error(err)
+  if (err.message && err.message.startsWith('CORS blocked')) {
+    return res.status(403).json({ error: 'Origin not allowed' })
+  }
   // Handle multer errors
   if (err.name === 'MulterError') {
     if (err.code === 'LIMIT_FILE_SIZE') {

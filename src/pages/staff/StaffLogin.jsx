@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate, Navigate } from 'react-router-dom'
-import { Lock, Mail, UserRound } from 'lucide-react'
+import { Lock, Mail } from 'lucide-react'
 import { useAuth } from '../../context/AuthContext'
 import Brand from '../../components/Brand'
 import LoginOrbs from '../../assets/illustrations/LoginOrbs'
@@ -42,7 +42,7 @@ export default function StaffLogin() {
       </div>
       <div className="login-page">
         <form className="card login-card" onSubmit={handleSubmit}>
-          <div className="login-logo"><UserRound size={26} /></div>
+          <div className="login-logo login-logo--img"><img src="/logo.jpg" alt="Goodwill Caring Healthcare Services logo" /></div>
           <h2 className="login-title">Staff login</h2>
           <p className="login-sub">Sign in to view your training plan and assigned modules.</p>
 

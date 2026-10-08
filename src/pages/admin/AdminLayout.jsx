@@ -1,5 +1,5 @@
 import { NavLink, Outlet, Navigate } from 'react-router-dom'
-import { BookOpen, ListChecks, LogOut, Users } from 'lucide-react'
+import { BookOpen, Flag, ListChecks, LogOut, Users } from 'lucide-react'
 import { useAuth } from '../../context/AuthContext'
 import { AdminBrand } from '../../components/Brand'
 import ReportBug from '../../components/ReportBug'
@@ -13,6 +13,7 @@ export default function AdminLayout() {
     { to: '/admin/staff', label: 'Staff', icon: Users },
     { to: '/admin/modules', label: 'Content Library', icon: BookOpen },
     { to: '/admin/submissions', label: 'Submissions', icon: ListChecks },
+    { to: '/admin/reports', label: 'Bug reports', icon: Flag },
   ]
 
   return (

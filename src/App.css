@@ -1535,6 +1535,24 @@
   box-shadow: 0 8px 20px rgba(76, 79, 232, 0.35);
 }
 
+.login-logo--img {
+  width: auto;
+  height: auto;
+  background: transparent;
+  box-shadow: none;
+  display: block;
+}
+
+.login-logo--img img {
+  height: 64px;
+  width: auto;
+  max-width: 240px;
+  object-fit: contain;
+  display: block;
+  margin: 0 auto;
+  border-radius: 10px;
+}
+
 .login-title {
   text-align: center;
 }
@@ -5966,4 +5984,53 @@ textarea:focus-visible {
 
 .storage-warn.danger {
   color: var(--bad);
+}
+
+/* ============================= Help / How-to ============================= */
+.help-card {
+  max-width: 760px;
+  margin: 0 auto;
+}
+
+.help-lead {
+  color: var(--ink-2);
+  line-height: 1.6;
+  margin: 8px 0 4px;
+}
+
+.help-section {
+  margin-top: 28px;
+  padding-top: 20px;
+  border-top: 1px solid var(--border);
+}
+
+.help-h2 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 1.15rem;
+  margin-bottom: 10px;
+}
+
+.help-steps {
+  margin: 0 0 16px 20px;
+  line-height: 1.65;
+  display: grid;
+  gap: 8px;
+}
+
+.help-steps code {
+  background: var(--accent-soft);
+  padding: 1px 6px;
+  border-radius: 6px;
+  font-size: 0.85em;
+  overflow-wrap: anywhere;
+}
+
+.help-hint {
+  display: block;
+  margin-top: 12px;
+  font-size: 0.85rem;
+  color: var(--ink-2);
+  line-height: 1.6;
 }

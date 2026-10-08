@@ -13,6 +13,10 @@ services:
     envVars:
       - key: VITE_API_URL
         value: https://quiz-app-backend.onrender.com
+      # Permanent APK download link (set AFTER you publish a GitHub Release
+      # asset). Leave empty to fall back to the API's /uploads/ folder.
+      - key: VITE_APK_URL
+        sync: false
     routes:
       - type: rewrite
         source: /*
@@ -40,6 +44,31 @@ services:
         generateValue: true
       - key: FRONTEND_URL
         value: https://quiz-app-frontend.onrender.com
+      # Extra comma-separated origins for CORS (same value is fine).
+      - key: CORS_ORIGINS
+        value: https://quiz-app-frontend.onrender.com
+      # Question audio/video uploads (free Cloudinary account). Media
+      # uploads fail without these; everything else still works.
+      - key: CLOUDINARY_CLOUD_NAME
+        sync: false
+      - key: CLOUDINARY_API_KEY
+        sync: false
+      - key: CLOUDINARY_API_SECRET
+        sync: false
+      # Bug-report emails (optional). Without these, reports are still
+      # saved and visible at /admin/reports — just not emailed.
+      - key: SMTP_HOST
+        value: smtp.gmail.com
+      - key: SMTP_PORT
+        value: "587"
+      - key: SMTP_USER
+        sync: false
+      - key: SMTP_PASS
+        sync: false
+      - key: MAIL_TO
+        sync: false
+      - key: MAIL_FROM
+        sync: false
     healthCheckPath: /api/health
     previews:
       generation: automatic
